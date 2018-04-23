@@ -1,5 +1,7 @@
-import StackLISP.Stack
+import StackLISP.Interp
+import System.Environment
 
 main = do
-    let someStack = (Some [(IntData 5), (StringData "Test")])
-    print $ someStack
+    (filename:_) <- getArgs
+    contents <- readFile filename
+    putStrLn $ parse contents

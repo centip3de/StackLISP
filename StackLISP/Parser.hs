@@ -114,4 +114,7 @@ module StackLISP.Parser where
         return $ BlockOp x
 
     parseProgram :: Parser Program
-    parseProgram = Program <$> many1 (parseBlock <* eof)
+    parseProgram = Program <$> many1 (parseBlock <* (many spaces >> eof))
+
+    parseFile :: String -> Either ParseError Program
+    parseFile contents = parse parseProgram "StackLISP" contents
