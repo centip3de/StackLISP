@@ -91,8 +91,27 @@ module StackLISP.Parser where
     parsePrimitive :: Parser PrimitiveToken
     parsePrimitive = parseNumber <|> parseBoolean <|> parseString
 
+    parseLoop :: Parser LoopOps
+    parseLoop = do
+        x <- oneOf "fw"
+        return $ case x of 
+            'f' -> For
+            'w' -> While
+
     parseStatement :: Parser Statement
     parseStatement = (MathSt <$> parseMath) 
         <|> (PrimSt <$> parsePrimitive)
         <|> (IOSt <$> parseIO)
         <|> (StackSt <$> parseStack)
+        <|> (LoopSt <$> parseLoop)
+        <|> (BlockSt <$> parseBlock)
+
+    parseBlock :: Parser BlockOp
+    parseBlock = do
+        char '['
+        x <- many1 parseStatement
+        char ']'
+        return $ BlockOp x
+
+    parseProgram :: Parser Program
+    parseProgram = Program <$> many1 (parseBlock <* eof)

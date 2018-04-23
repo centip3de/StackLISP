@@ -19,10 +19,16 @@ module StackLISP.Tokens where
         | Swap 
         | Sort deriving (Show, Eq)
 
+    data LoopOps = While 
+        | For deriving(Show, Eq)
+
     data Statement = StackSt StackOps 
         | MathSt MathOps 
         | PrimSt PrimitiveToken 
         | IOSt IOOps
-        | BlockSt [Statement]deriving (Show, Eq)
+        | BlockSt BlockOp
+        | LoopSt LoopOps deriving (Show, Eq)
 
-    data Program = Program [Statement]
+    data BlockOp = BlockOp [Statement] deriving (Show, Eq)
+
+    data Program = Program [BlockOp] deriving (Show, Eq)
