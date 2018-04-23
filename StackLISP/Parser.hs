@@ -38,14 +38,15 @@ module StackLISP.Parser where
     -}
 
     import StackLISP.Tokens
+    import Control.Monad
     import Text.ParserCombinators.Parsec hiding (spaces)
 
-    parseBoolean :: Parser BooleanToken
+    parseBoolean :: Parser PrimitiveToken
     parseBoolean = do
         x <- oneOf "TF"
         return $ case x of
-            'T' -> TrueToken
-            'F' -> FalseToken
+            'T' -> (BooleanToken True)
+            'F' -> (BooleanToken False)
 
     parseMath :: Parser MathOps
     parseMath = do
@@ -77,11 +78,21 @@ module StackLISP.Parser where
     spaces :: Parser ()
     spaces = skipMany1 space
 
-    parseString :: Parser StringToken
+    parseString :: Parser PrimitiveToken
     parseString = do
         char '"'
         x <- many (noneOf "\"")
         char '"'
         return $ StringToken x
 
-    
+    parseNumber :: Parser PrimitiveToken
+    parseNumber = liftM (NumberToken . read) $ many1 digit
+
+    parsePrimitive :: Parser PrimitiveToken
+    parsePrimitive = parseNumber <|> parseBoolean <|> parseString
+
+    parseStatement :: Parser Statement
+    parseStatement = (MathSt <$> parseMath) 
+        <|> (PrimSt <$> parsePrimitive)
+        <|> (IOSt <$> parseIO)
+        <|> (StackSt <$> parseStack)
