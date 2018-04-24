@@ -2,7 +2,7 @@ module StackLISP.Tokens where
 
     data PrimitiveToken = StringToken String
         | BooleanToken Bool
-        | NumberToken Integer deriving (Show, Eq)
+        | NumberToken Int deriving (Show, Eq)
 
     data MathOps = Add 
         | Sub 
@@ -27,7 +27,9 @@ module StackLISP.Tokens where
         | PrimSt PrimitiveToken 
         | IOSt IOOps
         | BlockSt BlockOp
-        | LoopSt LoopOps deriving (Show, Eq)
+        | LoopSt LoopOps 
+        | NOP 
+        | EOB deriving (Show, Eq)
 
     data BlockOp = BlockOp [Statement] deriving (Show, Eq)
 

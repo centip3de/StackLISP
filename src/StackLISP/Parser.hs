@@ -111,7 +111,7 @@ module StackLISP.Parser where
         char '['
         x <- many1 parseStatement
         char ']'
-        return $ BlockOp x
+        return $ BlockOp $ x ++ [EOB]
 
     parseProgram :: Parser Program
     parseProgram = Program <$> many1 (parseBlock <* (many spaces >> eof))

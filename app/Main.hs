@@ -4,4 +4,4 @@ import System.Environment
 main = do
     (filename:_) <- getArgs
     contents <- readFile filename
-    putStrLn $ parse contents
+    putStrLn $ interp contents

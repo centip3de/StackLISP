@@ -1,14 +1,20 @@
 module StackLISP.Stack where
 
     import Data.Maybe
+    import StackLISP.Tokens
 
-    type Code = String
-    data StackData = IntData Int | StringData String | BooleanData Bool | CodeData Code | RecursiveData StackData deriving (Show)
-    data Stack = Empty | Some [StackData] deriving (Show)
+    data StackData = IntData Int 
+        | StringData String 
+        | BooleanData Bool 
+        | BlockData BlockOp
+        | RecursiveData StackData deriving (Show)
 
-    push :: Stack -> StackData -> Maybe Stack
-    push (Empty) _ = Nothing
-    push (Some (stack)) newEle = Just $ Some (newEle:stack)
+    data Stack = Empty 
+        | Some [StackData] deriving (Show)
+
+    push :: Stack -> StackData -> Stack
+    push (Empty) newEle = Some [newEle]
+    push (Some stack) newEle = Some (newEle:stack)
 
     pop :: Stack -> Maybe (StackData, Stack)
     pop (Empty) = Nothing
