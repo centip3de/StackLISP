@@ -1,9 +1,6 @@
 module StackLISP.Interp where
     import StackLISP.Stack
     import StackLISP.Parser
-    import StackLISP.Tokens
-    import Text.ParserCombinators.Parsec hiding (spaces)
-
 
     data Interp = Interp {
         stack :: Stack,
