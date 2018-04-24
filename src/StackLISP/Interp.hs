@@ -40,13 +40,42 @@ module StackLISP.Interp where
                 Right (BlockData (BlockOp right)) -> Right (BlockData $ BlockOp $ left ++ right)
                 Right _ -> Left mismatched
                 Left error -> Left error
+            Left error -> Left error
         where
             mismatched = (RuntimeError "Mismatched types: can only perform addition on matching types.")
+    {-
+    Sub semantics:
+    String - Int = Drop characters
+    Int - Int = Subtraction
+    Block - Int = Drop code?
+    -}
+    sub :: Either RuntimeError StackData -> Either RuntimeError StackData -> Either RuntimeError StackData
+    sub x y =
+        case x of
+            Right (StringData left) -> case y of
+                Right (IntData right) -> Right (StringData $ drop right left)
+                Right _ -> Left mismatched
+                Left error -> Left error
+            Right (IntData left) -> case y of
+                Right (IntData right) -> Right (IntData $ left - right)
+                Right _ -> Left mismatched
+                Left error -> Left error
+            Right (BlockData (BlockOp left)) -> case y of
+                Right (IntData right) -> Right (BlockData $ BlockOp $ drop right left)
+                Right _ -> Left mismatched
+                Left error -> Left error
+            Left error -> Left error
+        where
+            mismatched = (RuntimeError "Mismatched types: Invalid types for subtraction.")
+
 
     handleMath :: Interp -> MathOps -> Either RuntimeError (Interp, Statement)
     handleMath interp op =
         case op of 
             Add -> case add left right of 
+                (Left x) -> (Left x)
+                (Right res) -> Right (Interp {stack=push newStack res, ip=newIp, program=newProg}, nextStatement)
+            Sub -> case sub left right of
                 (Left x) -> (Left x)
                 (Right res) -> Right (Interp {stack=push newStack res, ip=newIp, program=newProg}, nextStatement)
             _ -> (Left $ RuntimeError "Unsupported op")
