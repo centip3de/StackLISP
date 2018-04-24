@@ -48,21 +48,20 @@ module StackLISP.Interp where
         case op of 
             Add -> case add left right of 
                 (Left x) -> (Left x)
-                (Right res) -> Right (Interp {stack=push curStack res, ip=newIp, program=newProg}, nextStatement)
+                (Right res) -> Right (Interp {stack=push newStack res, ip=newIp, program=newProg}, nextStatement)
             _ -> (Left $ RuntimeError "Unsupported op")
         where 
             curStack = stack interp
-            left = case pop curStack of
-                Just (x, Some (xs)) -> Right x
-                _ -> Left (RuntimeError "Cannot apply math ops to supplied types.")
-            right = case pop curStack of
-                Just (x, Some (xs)) -> Right x
-                _ -> Left (RuntimeError "Cannot apply math ops to supplied types.")
+            (left, nextStack) = case pop curStack of
+                Just (x, Some (xs)) -> (Right x, Some (xs))
+                _ -> (Left (RuntimeError "Cannot apply math ops to supplied types."), curStack)
+            (right, newStack) = case pop nextStack of
+                Just (x, Some (xs)) -> (Right x, Some (xs))
+                _ -> (Left (RuntimeError "Cannot apply math ops to supplied types."), nextStack)
             newIp = 1 + (ip interp)
             (Program (x:xs)) = program interp
             (BlockOp (nextStatement:rest)) = x
             newProg = Program [(BlockOp rest)]
-
 
     handlePrimitive :: Interp -> PrimitiveToken -> (Interp, Statement)
     handlePrimitive interp op =
@@ -76,9 +75,6 @@ module StackLISP.Interp where
             (Program (x:xs)) = program interp
             (BlockOp (nextStatement:rest)) = x
             newProg = Program [(BlockOp rest)]
-
-
-
 
     eval :: Interp -> Statement -> Either RuntimeError Interp
     eval interp NOP = eval newInterp newStatement
