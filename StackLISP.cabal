@@ -6,12 +6,12 @@
 
 name:           StackLISP
 version:        0.1.0.0
-description:    Please see the README on Github at <https://github.com/githubuser/StackLISP#readme>
-homepage:       https://github.com/githubuser/StackLISP#readme
-bug-reports:    https://github.com/githubuser/StackLISP/issues
-author:         Author name here
-maintainer:     example@example.com
-copyright:      2018 Author name here
+description:    Please see the README on Github at <https://github.com/centip3de/StackLISP#readme>
+homepage:       https://github.com/centip3de/StackLISP#readme
+bug-reports:    https://github.com/centip3de/StackLISP/issues
+author:         Kyle Sammons
+maintainer:     kyle.m.sammons@gmail.com
+copyright:      2018 Kyle Sammons
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
