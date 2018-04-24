@@ -75,8 +75,10 @@ module StackLISP.Parser where
             's' -> Swap
             't' -> Sort
 
-    spaces :: Parser ()
-    spaces = skipMany1 space
+    spaces :: Parser Statement
+    spaces = do 
+        skipMany1 space
+        return NOP
 
     parseString :: Parser PrimitiveToken
     parseString = do
@@ -105,6 +107,7 @@ module StackLISP.Parser where
         <|> (StackSt <$> parseStack)
         <|> (LoopSt <$> parseLoop)
         <|> (BlockSt <$> parseBlock)
+        <|> spaces
 
     parseBlock :: Parser BlockOp
     parseBlock = do

@@ -43,12 +43,12 @@ module StackLISP.Interp where
         where
             mismatched = (RuntimeError "Mismatched types: can only perform addition on matching types.")
 
-    handleMath :: Interp -> MathOps -> Either RuntimeError Interp
+    handleMath :: Interp -> MathOps -> Either RuntimeError (Interp, Statement)
     handleMath interp op =
         case op of 
             Add -> case add left right of 
                 (Left x) -> (Left x)
-                (Right res) -> Right Interp {stack=push curStack res, ip=newIp, program=newProg}
+                (Right res) -> Right (Interp {stack=push curStack res, ip=newIp, program=newProg}, nextStatement)
             _ -> (Left $ RuntimeError "Unsupported op")
         where 
             curStack = stack interp
@@ -58,27 +58,42 @@ module StackLISP.Interp where
             right = case pop curStack of
                 Just (x, Some (xs)) -> Right x
                 _ -> Left (RuntimeError "Cannot apply math ops to supplied types.")
-            (newInterp, newOp) = step interp
-            newIp = ip newInterp
-            newProg = program newInterp
+            newIp = 1 + (ip interp)
+            (Program (x:xs)) = program interp
+            (BlockOp (nextStatement:rest)) = x
+            newProg = Program [(BlockOp rest)]
 
-    handlePrimitive :: Interp -> PrimitiveToken -> Interp
+
+    handlePrimitive :: Interp -> PrimitiveToken -> (Interp, Statement)
     handlePrimitive interp op =
         case op of
-            (StringToken string) -> Interp {stack=push curStack (StringData string), ip=newIp, program=newProg}
-            (BooleanToken bool) -> Interp {stack=push curStack (BooleanData bool), ip=newIp, program=newProg}
-            (NumberToken int) -> Interp {stack=push curStack (IntData int), ip=newIp, program=newProg}
+            (StringToken string) -> (Interp {stack=push curStack (StringData string), ip=newIp, program=newProg}, nextStatement)
+            (BooleanToken bool) -> (Interp {stack=push curStack (BooleanData bool), ip=newIp, program=newProg}, nextStatement)
+            (NumberToken int) -> (Interp {stack=push curStack (IntData int), ip=newIp, program=newProg}, nextStatement)
         where
             curStack = stack interp
             newIp = 1 + (ip interp)
-            newProg = program interp
+            (Program (x:xs)) = program interp
+            (BlockOp (nextStatement:rest)) = x
+            newProg = Program [(BlockOp rest)]
 
 
 
-    eval :: Interp -> Statement -> Interp
-    eval interp NOP = eval newInterp newTok 
+
+    eval :: Interp -> Statement -> Either RuntimeError Interp
+    eval interp NOP = eval newInterp newStatement
             where
-                (newInterp, newTok) = step interp
+                (newInterp, newStatement) = step interp
+    eval interp (PrimSt tok) = res
+            where
+                (newInterp, newStatement) = handlePrimitive interp tok
+                res = eval newInterp newStatement
+    eval interp (MathSt ops) = res
+            where
+                res = case handleMath interp ops of
+                    (Left x) -> (Left x)
+                    (Right (newInterp, newStatement)) -> eval newInterp newStatement
+    eval interp (EOB) = Right interp
 
     interp :: String -> String
     interp contents = case parseFile contents of 
