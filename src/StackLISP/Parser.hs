@@ -76,7 +76,7 @@ module StackLISP.Parser where
             't' -> Sort
 
     parseWhitespace :: Parser ()
-    parseWhitespace = skipMany1 space
+    parseWhitespace = skipMany space
 
     parseString :: Parser PrimitiveToken
     parseString = do

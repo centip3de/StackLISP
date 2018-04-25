@@ -1,1 +1,1 @@
-["Duplicate me"d]
+"Duplicate me"d
