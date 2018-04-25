@@ -61,18 +61,75 @@ module StackLISP.Interp where
             (BlockData (BlockOp left), IntData right) -> Right (BlockData $ BlockOp $ concat $ replicate right left)
             _ -> Left (RuntimeError "Mismatched types: Invalid types for multiplication.")
 
-    translateOp :: MathOps -> Either RuntimeError (StackData -> StackData -> Either RuntimeError StackData)
-    translateOp Add = Right add
-    translateOp Sub = Right sub
-    translateOp Mul = Right mul
-    translateOp _   = Left $ RuntimeError "Unsupported op"
+    {-
+    Div semantics:
+    Int / Int = Division
+    -}
+    division :: StackData -> StackData -> Either RuntimeError StackData
+    division x y =
+        case (x, y) of
+            (IntData left, IntData right) -> Right (IntData $ left `quot` right)
+            _ -> Left (RuntimeError "Mismatched types: Invalid types for division.")
+
+    {-
+    Mod semantics:
+    Int % Int = Division
+    -}
+    modulo :: StackData -> StackData -> Either RuntimeError StackData
+    modulo x y =
+        case (x, y) of
+            (IntData left, IntData right) -> Right (IntData $ left `mod` right)
+            _ -> Left (RuntimeError "Mismatched types: Invalid types for modulo.")
+
+
+    translateMathOp :: MathOps -> Either RuntimeError (StackData -> StackData -> Either RuntimeError StackData)
+    translateMathOp Add = Right add
+    translateMathOp Sub = Right sub
+    translateMathOp Mul = Right mul
+    translateMathOp Div = Right division
+    translateMathOp Mod = Right modulo
+
+    popStack :: Stack -> Either RuntimeError Stack
+    popStack stack = case pop stack of
+        (Left error) -> Left error
+        (Right (x, xs)) -> Right xs
+    
+    dupStack :: Stack -> Either RuntimeError Stack
+    dupStack stack = case stack of
+        Empty -> Right Empty
+        (Some xs) -> Right $ Some $ concat $ replicate 2 xs
+    
+    reverseStack :: Stack -> Either RuntimeError Stack
+    reverseStack stack = case stack of
+        Empty -> Right Empty
+        (Some xs) -> Right $ Some $ reverse xs
+    
+    translateStackOp :: StackOps -> Either RuntimeError (Stack -> Either RuntimeError Stack)
+    translateStackOp Pop = Right popStack
+    translateStackOp Dup = Right dupStack
+    translateStackOp Reverse = Right reverseStack
+    translateStackOp _ = Left (RuntimeError "Unsupported op")
+
+    handleStack :: Interp -> StackOps -> Either RuntimeError (Interp, Statement)
+    handleStack interp op = do
+        op' <- translateStackOp op
+        newStack <- op' curStack
+        Right (Interp {stack=newStack, ip=newIp, program=newProg}, nextStatement)
+
+        where
+            curStack = stack interp
+            newIp = 1 + (ip interp)
+            (Program (x:xs)) = program interp
+            (BlockOp (nextStatement:rest)) = x
+            newProg = Program [(BlockOp rest)]
+
 
     handleMath :: Interp -> MathOps -> Either RuntimeError (Interp, Statement)
     handleMath interp op = do
         (left, nextStack) <- pop curStack
         (right, newStack) <- pop nextStack
 
-        op' <- translateOp op
+        op' <- translateMathOp op
         result <- op' left right
         Right (Interp {stack=push newStack result, ip=newIp, program=newProg}, nextStatement)
 
@@ -104,9 +161,10 @@ module StackLISP.Interp where
             where
                 (newInterp, newStatement) = handlePrimitive interp tok
                 res = eval newInterp newStatement
-    eval interp (MathSt ops) = res
-            where
-                res = case handleMath interp ops of
+    eval interp (MathSt ops) = case handleMath interp ops of
+                    (Left x) -> (Left x)
+                    (Right (newInterp, newStatement)) -> eval newInterp newStatement
+    eval interp (StackSt ops) = case handleStack interp ops of
                     (Left x) -> (Left x)
                     (Right (newInterp, newStatement)) -> eval newInterp newStatement
     eval interp (EOB) = Right interp
