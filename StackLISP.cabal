@@ -36,6 +36,7 @@ library
       StackLISP.Parser
       StackLISP.Stack
       StackLISP.Tokens
+      StackLISP.Errors
   other-modules:
       Paths_StackLISP
   default-language: Haskell2010

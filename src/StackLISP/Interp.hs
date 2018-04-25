@@ -2,6 +2,7 @@ module StackLISP.Interp where
     import StackLISP.Stack
     import StackLISP.Parser
     import StackLISP.Tokens
+    import StackLISP.Errors
 
     data Interp = Interp {
         stack :: Stack,
@@ -9,7 +10,6 @@ module StackLISP.Interp where
         program :: Program
     } deriving (Show)
 
-    data RuntimeError = RuntimeError String deriving (Show)
 
     step :: Interp -> (Interp, Statement)
     step interp = (newInterp, nextStatement)
@@ -25,68 +25,59 @@ module StackLISP.Interp where
     Int + Int = Addition
     Block + Block = Block concatenation
     -}
-    add :: Either RuntimeError StackData -> Either RuntimeError StackData -> Either RuntimeError StackData
+    add :: StackData -> StackData -> Either RuntimeError StackData
     add x y = 
-        case x of
-            Right (StringData left) -> case y of 
-                Right (StringData right) -> Right (StringData $ left ++ right)
-                Right _ -> Left mismatched
-                Left error -> Left error
-            Right (IntData left) -> case y of 
-                Right (IntData right) -> Right (IntData $ left + right)
-                Right _ -> Left mismatched 
-                Left error -> Left error
-            Right (BlockData (BlockOp left)) -> case y of
-                Right (BlockData (BlockOp right)) -> Right (BlockData $ BlockOp $ left ++ right)
-                Right _ -> Left mismatched
-                Left error -> Left error
-            Left error -> Left error
-        where
-            mismatched = (RuntimeError "Mismatched types: can only perform addition on matching types.")
+        case (x, y) of
+            (StringData left, StringData right) -> Right (StringData $ left ++ right)
+            (IntData left, IntData right) -> Right (IntData $ left + right)
+            (BlockData (BlockOp left), BlockData (BlockOp right)) -> Right (BlockData $ BlockOp $ left ++ right)
+            _ -> Left (RuntimeError "Mismatched types: can only perform addition on matching types.")
+
     {-
     Sub semantics:
     String - Int = Drop characters
     Int - Int = Subtraction
     Block - Int = Drop code?
     -}
-    sub :: Either RuntimeError StackData -> Either RuntimeError StackData -> Either RuntimeError StackData
+    sub :: StackData -> StackData -> Either RuntimeError StackData
     sub x y =
-        case x of
-            Right (StringData left) -> case y of
-                Right (IntData right) -> Right (StringData $ drop right left)
-                Right _ -> Left mismatched
-                Left error -> Left error
-            Right (IntData left) -> case y of
-                Right (IntData right) -> Right (IntData $ left - right)
-                Right _ -> Left mismatched
-                Left error -> Left error
-            Right (BlockData (BlockOp left)) -> case y of
-                Right (IntData right) -> Right (BlockData $ BlockOp $ drop right left)
-                Right _ -> Left mismatched
-                Left error -> Left error
-            Left error -> Left error
-        where
-            mismatched = (RuntimeError "Mismatched types: Invalid types for subtraction.")
+        case (x, y) of
+            (StringData left, IntData right) -> Right (StringData $ drop right left)
+            (IntData left, IntData right) -> Right (IntData $ left - right)
+            (BlockData (BlockOp left), IntData right) -> Right (BlockData $ BlockOp $ drop right left)
+            _ -> Left (RuntimeError "Mismatched types: Invalid types for subtraction.")
 
+    {-
+    Mul semantics:
+    String * Int = Duplicate string
+    Int * Int = Multiplication
+    Block * Int = Duplicate blocks
+    -}
+    mul :: StackData -> StackData -> Either RuntimeError StackData
+    mul x y =
+        case (x, y) of
+            (StringData left, IntData right) -> Right (StringData $ concat $ replicate right left)
+            (IntData left, IntData right) -> Right (IntData $ left * right)
+            (BlockData (BlockOp left), IntData right) -> Right (BlockData $ BlockOp $ concat $ replicate right left)
+            _ -> Left (RuntimeError "Mismatched types: Invalid types for multiplication.")
+
+    translateOp :: MathOps -> Either RuntimeError (StackData -> StackData -> Either RuntimeError StackData)
+    translateOp Add = Right add
+    translateOp Sub = Right sub
+    translateOp Mul = Right mul
+    translateOp _   = Left $ RuntimeError "Unsupported op"
 
     handleMath :: Interp -> MathOps -> Either RuntimeError (Interp, Statement)
-    handleMath interp op =
-        case op of 
-            Add -> case add left right of 
-                (Left x) -> (Left x)
-                (Right res) -> Right (Interp {stack=push newStack res, ip=newIp, program=newProg}, nextStatement)
-            Sub -> case sub left right of
-                (Left x) -> (Left x)
-                (Right res) -> Right (Interp {stack=push newStack res, ip=newIp, program=newProg}, nextStatement)
-            _ -> (Left $ RuntimeError "Unsupported op")
+    handleMath interp op = do
+        (left, nextStack) <- pop curStack
+        (right, newStack) <- pop nextStack
+
+        op' <- translateOp op
+        result <- op' left right
+        Right (Interp {stack=push newStack result, ip=newIp, program=newProg}, nextStatement)
+
         where 
             curStack = stack interp
-            (left, nextStack) = case pop curStack of
-                Just (x, Some (xs)) -> (Right x, Some (xs))
-                _ -> (Left (RuntimeError "Cannot apply math ops to supplied types."), curStack)
-            (right, newStack) = case pop nextStack of
-                Just (x, Some (xs)) -> (Right x, Some (xs))
-                _ -> (Left (RuntimeError "Cannot apply math ops to supplied types."), nextStack)
             newIp = 1 + (ip interp)
             (Program (x:xs)) = program interp
             (BlockOp (nextStatement:rest)) = x
