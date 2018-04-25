@@ -80,9 +80,9 @@ module StackLISP.Parser where
 
     parseString :: Parser PrimitiveToken
     parseString = do
-        handleWhitespace $ char '"'
-        x <- many (noneOf "\"")
         char '"'
+        x <- many (noneOf "\"")
+        handleWhitespace $ char '"'
         return $ StringToken x
 
     parseNumber :: Parser PrimitiveToken
