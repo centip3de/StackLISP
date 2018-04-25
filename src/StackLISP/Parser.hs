@@ -43,14 +43,14 @@ module StackLISP.Parser where
 
     parseBoolean :: Parser PrimitiveToken
     parseBoolean = do
-        x <- oneOf "TF"
+        x <- handleWhitespace $ oneOf "TF"
         return $ case x of
             'T' -> (BooleanToken True)
             'F' -> (BooleanToken False)
 
     parseMath :: Parser MathOps
     parseMath = do
-        x <- oneOf "+-*/%"
+        x <- handleWhitespace $ oneOf "+-*/%"
         return $ case x of
             '+' -> Add
             '-' -> Sub
@@ -60,14 +60,14 @@ module StackLISP.Parser where
 
     parseIO :: Parser IOOps
     parseIO = do
-        x <- oneOf ".,"
+        x <- handleWhitespace $ oneOf ".,"
         return $ case x of 
             '.' -> Print
             ',' -> Input
 
     parseStack :: Parser StackOps
     parseStack = do
-        x <- oneOf "pdrst"
+        x <- handleWhitespace $ oneOf "pdrst"
         return $ case x of
             'p' -> Pop
             'd' -> Dup
@@ -75,27 +75,25 @@ module StackLISP.Parser where
             's' -> Swap
             't' -> Sort
 
-    spaces :: Parser Statement
-    spaces = do 
-        skipMany1 space
-        return NOP
+    parseWhitespace :: Parser ()
+    parseWhitespace = skipMany1 space
 
     parseString :: Parser PrimitiveToken
     parseString = do
-        char '"'
+        handleWhitespace $ char '"'
         x <- many (noneOf "\"")
         char '"'
         return $ StringToken x
 
     parseNumber :: Parser PrimitiveToken
-    parseNumber = liftM (NumberToken . read) $ many1 digit
+    parseNumber = liftM (NumberToken . read) $ handleWhitespace $ many1 digit
 
     parsePrimitive :: Parser PrimitiveToken
     parsePrimitive = parseNumber <|> parseBoolean <|> parseString
 
     parseLoop :: Parser LoopOps
     parseLoop = do
-        x <- oneOf "fw"
+        x <- handleWhitespace $ oneOf "fw"
         return $ case x of 
             'f' -> For
             'w' -> While
@@ -107,17 +105,19 @@ module StackLISP.Parser where
         <|> (StackSt <$> parseStack)
         <|> (LoopSt <$> parseLoop)
         <|> (BlockSt <$> parseBlock)
-        <|> spaces
+    
+    handleWhitespace :: Parser a -> Parser a
+    handleWhitespace p = p <* parseWhitespace
 
     parseBlock :: Parser BlockOp
     parseBlock = do
-        char '['
+        handleWhitespace $ char '['
         x <- many1 parseStatement
         char ']'
         return $ BlockOp $ x ++ [EOB]
 
     parseProgram :: Parser Program
-    parseProgram = Program <$> many1 (parseBlock <* (many spaces >> eof))
+    parseProgram = Program <$> (many1 parseStatement <* eof)
 
     parseFile :: String -> Either ParseError Program
     parseFile contents = parse parseProgram "StackLISP" contents

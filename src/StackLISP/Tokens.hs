@@ -33,4 +33,4 @@ module StackLISP.Tokens where
 
     data BlockOp = BlockOp [Statement] deriving (Show, Eq)
 
-    data Program = Program [BlockOp] deriving (Show, Eq)
+    data Program = Program [Statement] deriving (Show, Eq)

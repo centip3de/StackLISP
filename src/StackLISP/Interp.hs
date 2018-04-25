@@ -6,18 +6,8 @@ module StackLISP.Interp where
 
     data Interp = Interp {
         stack :: Stack,
-        ip :: Int,
         program :: Program
     } deriving (Show)
-
-
-    step :: Interp -> (Interp, Statement)
-    step interp = (newInterp, nextStatement)
-        where
-            newIp = 1 + (ip interp)
-            (Program (x:xs)) = program interp
-            (BlockOp (nextStatement:rest)) = x
-            newInterp = Interp {stack=stack interp, ip=newIp, program=Program [(BlockOp rest)]}
 
     {-
     Add semantics:
@@ -103,73 +93,66 @@ module StackLISP.Interp where
     reverseStack stack = case stack of
         Empty -> Right Empty
         (Some xs) -> Right $ Some $ reverse xs
+
+    swapStack :: Stack -> Either RuntimeError Stack
+    swapStack stack = case stack of
+        Empty -> Right Empty
+        (Some (first:second:rest)) -> Right (Some (second:first:rest))
     
+    {-
+    TODO: Figure out how we want stack sort to work
+    -}
     translateStackOp :: StackOps -> Either RuntimeError (Stack -> Either RuntimeError Stack)
     translateStackOp Pop = Right popStack
     translateStackOp Dup = Right dupStack
     translateStackOp Reverse = Right reverseStack
+    translateStackOp Swap = Right swapStack
     translateStackOp _ = Left (RuntimeError "Unsupported op")
 
-    handleStack :: Interp -> StackOps -> Either RuntimeError (Interp, Statement)
+    handleStack :: Interp -> StackOps -> Either RuntimeError Interp
     handleStack interp op = do
         op' <- translateStackOp op
-        newStack <- op' curStack
-        Right (Interp {stack=newStack, ip=newIp, program=newProg}, nextStatement)
+        newStack <- op' $ stack interp
+        Right Interp {stack=newStack, program=program interp}
 
-        where
-            curStack = stack interp
-            newIp = 1 + (ip interp)
-            (Program (x:xs)) = program interp
-            (BlockOp (nextStatement:rest)) = x
-            newProg = Program [(BlockOp rest)]
-
-
-    handleMath :: Interp -> MathOps -> Either RuntimeError (Interp, Statement)
+    handleMath :: Interp -> MathOps -> Either RuntimeError Interp
     handleMath interp op = do
-        (left, nextStack) <- pop curStack
+        (left, nextStack) <- pop $ stack interp
         (right, newStack) <- pop nextStack
 
         op' <- translateMathOp op
         result <- op' left right
-        Right (Interp {stack=push newStack result, ip=newIp, program=newProg}, nextStatement)
+        Right Interp {stack=push newStack result, program=program interp}
 
-        where 
-            curStack = stack interp
-            newIp = 1 + (ip interp)
-            (Program (x:xs)) = program interp
-            (BlockOp (nextStatement:rest)) = x
-            newProg = Program [(BlockOp rest)]
-
-    handlePrimitive :: Interp -> PrimitiveToken -> (Interp, Statement)
+    handlePrimitive :: Interp -> PrimitiveToken -> Either RuntimeError Interp
     handlePrimitive interp op =
         case op of
-            (StringToken string) -> (Interp {stack=push curStack (StringData string), ip=newIp, program=newProg}, nextStatement)
-            (BooleanToken bool) -> (Interp {stack=push curStack (BooleanData bool), ip=newIp, program=newProg}, nextStatement)
-            (NumberToken int) -> (Interp {stack=push curStack (IntData int), ip=newIp, program=newProg}, nextStatement)
+            (StringToken string) -> Right $ Interp {stack=push curStack (StringData string), program=newProg}
+            (BooleanToken bool) -> Right $ Interp {stack=push curStack (BooleanData bool), program=newProg}
+            (NumberToken int) -> Right $ Interp {stack=push curStack (IntData int), program=newProg}
         where
             curStack = stack interp
-            newIp = 1 + (ip interp)
-            (Program (x:xs)) = program interp
-            (BlockOp (nextStatement:rest)) = x
-            newProg = Program [(BlockOp rest)]
+            newProg = program interp
 
-    eval :: Interp -> Statement -> Either RuntimeError Interp
-    eval interp NOP = eval newInterp newStatement
-            where
-                (newInterp, newStatement) = step interp
-    eval interp (PrimSt tok) = res
-            where
-                (newInterp, newStatement) = handlePrimitive interp tok
-                res = eval newInterp newStatement
-    eval interp (MathSt ops) = case handleMath interp ops of
-                    (Left x) -> (Left x)
-                    (Right (newInterp, newStatement)) -> eval newInterp newStatement
-    eval interp (StackSt ops) = case handleStack interp ops of
-                    (Left x) -> (Left x)
-                    (Right (newInterp, newStatement)) -> eval newInterp newStatement
-    eval interp (EOB) = Right interp
+    step :: Interp -> Statement -> Either RuntimeError Interp
+    step interp NOP = Right interp
+    step interp (PrimSt tok) = handlePrimitive interp tok
+    step interp (MathSt ops) = handleMath interp ops
+    step interp (StackSt ops) = handleStack interp ops
+    step interp EOB = Right interp
+
+    handleStep :: Either RuntimeError Interp -> Statement -> Either RuntimeError Interp
+    handleStep either statement = case either of
+        (Left x) -> Left x
+        (Right interp) -> step interp statement
+
+    eval :: Interp -> Either RuntimeError Interp
+    eval interp = 
+        foldl handleStep (Right interp) (statements)
+        where
+            (Program statements) = program interp
 
     interp :: String -> String
     interp contents = case parseFile contents of 
         (Left error) -> "Runtime Error: " ++ (show error)
-        (Right res) -> show $ eval Interp {stack=Empty, ip=0, program=res} NOP
+        (Right res) -> show $ eval Interp {stack=Empty, program=res}
