@@ -20,7 +20,7 @@ module StackLISP.Interp where
         case (x, y) of
             (StringData left, StringData right) -> Right (StringData $ left ++ right)
             (IntData left, IntData right) -> Right (IntData $ left + right)
-            (BlockData (BlockOp left), BlockData (BlockOp right)) -> Right (BlockData $ BlockOp $ left ++ right)
+            (StatementData left, StatementData right) -> Right (StatementData $ left ++ right)
             _ -> Left (RuntimeError "Mismatched types: can only perform addition on matching types.")
 
     {-
@@ -34,7 +34,7 @@ module StackLISP.Interp where
         case (x, y) of
             (StringData left, IntData right) -> Right (StringData $ drop right left)
             (IntData left, IntData right) -> Right (IntData $ left - right)
-            (BlockData (BlockOp left), IntData right) -> Right (BlockData $ BlockOp $ drop right left)
+            (StatementData left, IntData right) -> Right (StatementData $ drop right left)
             _ -> Left (RuntimeError "Mismatched types: Invalid types for subtraction.")
 
     {-
@@ -48,7 +48,7 @@ module StackLISP.Interp where
         case (x, y) of
             (StringData left, IntData right) -> Right (StringData $ concat $ replicate right left)
             (IntData left, IntData right) -> Right (IntData $ left * right)
-            (BlockData (BlockOp left), IntData right) -> Right (BlockData $ BlockOp $ concat $ replicate right left)
+            (StatementData left, IntData right) -> Right (StatementData $ concat $ replicate right left)
             _ -> Left (RuntimeError "Mismatched types: Invalid types for multiplication.")
 
     {-
@@ -79,30 +79,31 @@ module StackLISP.Interp where
     translateMathOp Div = Right division
     translateMathOp Mod = Right modulo
 
-    popStack :: Stack -> Either RuntimeError Stack
-    popStack stack = case pop stack of
+    popStack :: Interp -> Either RuntimeError Interp
+    popStack interp = case pop $ stack interp of
         (Left error) -> Left error
-        (Right (x, xs)) -> Right xs
+        (Right (x, Some [])) -> Right $ Interp {stack=Empty, program=program interp}
+        (Right (x, xs)) -> Right $ Interp {stack=xs, program=program interp}
     
-    dupStack :: Stack -> Either RuntimeError Stack
-    dupStack stack = case stack of
-        Empty -> Right Empty
-        (Some xs) -> Right $ Some $ concat $ replicate 2 xs
+    dupStack :: Interp -> Either RuntimeError Interp
+    dupStack interp = case stack interp of
+        Empty -> Right interp
+        (Some xs) -> Right $ Interp {stack=Some $ concat $ replicate 2 xs, program=program interp}
     
-    reverseStack :: Stack -> Either RuntimeError Stack
-    reverseStack stack = case stack of
-        Empty -> Right Empty
-        (Some xs) -> Right $ Some $ reverse xs
+    reverseStack :: Interp -> Either RuntimeError Interp
+    reverseStack interp = case stack interp of
+        Empty -> Right interp
+        (Some xs) -> Right $ Interp {stack=Some $ reverse xs, program=program interp}
 
-    swapStack :: Stack -> Either RuntimeError Stack
-    swapStack stack = case stack of
-        Empty -> Right Empty
-        (Some (first:second:rest)) -> Right (Some (second:first:rest))
+    swapStack :: Interp -> Either RuntimeError Interp
+    swapStack interp = case stack interp of
+        Empty -> Right interp
+        (Some (first:second:rest)) -> Right $ Interp {stack=Some (second:first:rest), program=program interp}
     
     {-
     TODO: Figure out how we want stack sort to work
     -}
-    translateStackOp :: StackOps -> Either RuntimeError (Stack -> Either RuntimeError Stack)
+    translateStackOp :: StackOps -> Either RuntimeError (Interp -> Either RuntimeError Interp)
     translateStackOp Pop = Right popStack
     translateStackOp Dup = Right dupStack
     translateStackOp Reverse = Right reverseStack
@@ -112,8 +113,7 @@ module StackLISP.Interp where
     handleStack :: Interp -> StackOps -> Either RuntimeError Interp
     handleStack interp op = do
         op' <- translateStackOp op
-        newStack <- op' $ stack interp
-        Right Interp {stack=newStack, program=program interp}
+        op' interp
 
     handleMath :: Interp -> MathOps -> Either RuntimeError Interp
     handleMath interp op = do
@@ -134,11 +134,18 @@ module StackLISP.Interp where
             curStack = stack interp
             newProg = program interp
 
+    handleBlock :: Interp -> [Statement] -> Either RuntimeError Interp
+    handleBlock interp ops = Right $ Interp {stack=newStack, program=newProgram}
+            where
+                newStack = push (stack interp) (StatementData ops)
+                newProgram = program interp
+
     step :: Interp -> Statement -> Either RuntimeError Interp
     step interp NOP = Right interp
     step interp (PrimSt tok) = handlePrimitive interp tok
     step interp (MathSt ops) = handleMath interp ops
     step interp (StackSt ops) = handleStack interp ops
+    step interp (BlockSt (BlockOp ops)) = handleBlock interp ops
     step interp EOB = Right interp
 
     handleStep :: Either RuntimeError Interp -> Statement -> Either RuntimeError Interp

@@ -7,7 +7,7 @@ module StackLISP.Stack where
     data StackData = IntData Int 
         | StringData String 
         | BooleanData Bool 
-        | BlockData BlockOp
+        | StatementData [Statement]
         | RecursiveData StackData deriving (Show)
 
     data Stack = Empty 
