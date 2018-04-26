@@ -17,7 +17,8 @@ module StackLISP.Tokens where
         | Dup 
         | Reverse 
         | Swap 
-        | Sort deriving (Show, Eq)
+        | Sort 
+        | Execute deriving (Show, Eq)
 
     data LoopOps = While 
         | For deriving(Show, Eq)

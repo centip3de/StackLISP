@@ -9,12 +9,13 @@ module StackLISP.Parser where
     for_loop = f
     while_loop = w
     
-    stack_ops = pop | dup | reverse | swap | sort
+    stack_ops = pop | dup | reverse | swap | sort | execute
     pop = p
     dup = d
     reverse = r
     swap = s
     sort = t
+    execute = e
 
     io_ops = print | input
     print = .
@@ -67,13 +68,14 @@ module StackLISP.Parser where
 
     parseStack :: Parser StackOps
     parseStack = do
-        x <- handleWhitespace $ oneOf "pdrst"
+        x <- handleWhitespace $ oneOf "pdrste"
         return $ case x of
             'p' -> Pop
             'd' -> Dup
             'r' -> Reverse
             's' -> Swap
             't' -> Sort
+            'e' -> Execute
 
     parseWhitespace :: Parser ()
     parseWhitespace = skipMany space

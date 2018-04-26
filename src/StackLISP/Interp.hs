@@ -99,7 +99,17 @@ module StackLISP.Interp where
     swapStack interp = case stack interp of
         Empty -> Right interp
         (Some (first:second:rest)) -> Right $ Interp {stack=Some (second:first:rest), program=program interp}
-    
+
+    executeStack :: Interp -> Either RuntimeError Interp
+    executeStack interp = case pop $ stack interp of
+        (Left error) -> Left error
+        (Right ((StatementData ops), Some [])) -> doEval Empty ops
+        (Right ((StatementData ops), rest)) -> doEval rest ops
+        where
+            doEval stackData prog = case eval Interp {stack=stackData, program=Program prog} of
+                (Left error) -> Left error
+                (Right newInterp) -> Right $ Interp{stack=stack newInterp, program=program interp}
+
     {-
     TODO: Figure out how we want stack sort to work
     -}
@@ -108,6 +118,7 @@ module StackLISP.Interp where
     translateStackOp Dup = Right dupStack
     translateStackOp Reverse = Right reverseStack
     translateStackOp Swap = Right swapStack
+    translateStackOp Execute = Right executeStack
     translateStackOp _ = Left (RuntimeError "Unsupported op")
 
     handleStack :: Interp -> StackOps -> Either RuntimeError Interp
