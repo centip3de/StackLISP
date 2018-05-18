@@ -1,4 +1,6 @@
 module StackLISP.Interp where
+    import Control.Monad.Free
+
     import StackLISP.Stack
     import StackLISP.Parser
     import StackLISP.Tokens
@@ -122,9 +124,7 @@ module StackLISP.Interp where
     translateStackOp _ = Left (RuntimeError "Unsupported op")
 
     handleStack :: Interp -> StackOps -> Either RuntimeError Interp
-    handleStack interp op = do
-        op' <- translateStackOp op
-        op' interp
+    handleStack interp op = translateStackOp op >>= (\x -> x interp)
 
     handleMath :: Interp -> MathOps -> Either RuntimeError Interp
     handleMath interp op = do
@@ -151,12 +151,45 @@ module StackLISP.Interp where
                 newStack = push (stack interp) (StatementData ops)
                 newProgram = program interp
 
+    getString :: IOM String
+    getString = liftF $ InputStr id
+
+    putString :: IOM String
+    putString string = liftF $ PrintStr string ()
+
+    doIO :: IOM a -> IO a 
+    doIO = foldFree func
+                where 
+                    func (InputStr f) = f <$> getChar
+                    func (PrintStr a b) = putStrLn a >> return b
+
+    handleInput :: Interp -> Either RuntimeError Interp
+    handleInput interp = do
+        string <- getString
+        string' <- doIO string
+        Right $ Interp {stack=push (stack interp) string', program=program interp}
+
+    handlePrint :: Interp -> Either RuntimeError Interp
+    handlePrint interp = do
+        (string, stack') <- pop $ stack interp
+        x <- putString string
+        doIO x
+        Right $ Interp {stack=stack', program=program interp}
+
+    handleIO :: Interp -> IOOps -> Either RuntimeError Interp
+    handleIO interp ops = 
+        case ops of
+            (Print) -> handlePrint interp
+            (Input) -> handleInput interp
+        
+
     step :: Interp -> Statement -> Either RuntimeError Interp
     step interp NOP = Right interp
     step interp (PrimSt tok) = handlePrimitive interp tok
     step interp (MathSt ops) = handleMath interp ops
     step interp (StackSt ops) = handleStack interp ops
     step interp (BlockSt (BlockOp ops)) = handleBlock interp ops
+    step interp (IOSt ops) = handleIO interp ops
     step interp EOB = Right interp
 
     handleStep :: Either RuntimeError Interp -> Statement -> Either RuntimeError Interp

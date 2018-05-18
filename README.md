@@ -4,3 +4,9 @@ StackLISP is a stack based codegolfing language where code is data, much like in
 
 ### Examples
 Examples can be found in the `/examples` directory. Currently they're simply small tests of the language, however more complex ones will be added as the language progresses. 
+
+
+### TODO:
+* Implement IO sanely (e.g. using free monads rather than passing the IO monad everywhere)
+* More OP codes
+* Documentation
