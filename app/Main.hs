@@ -4,4 +4,6 @@ import System.Environment
 main = do
     (filename:_) <- getArgs
     contents <- readFile filename
-    putStrLn $ interp contents
+    case interp contents of
+        (Left error) -> putStrLn error
+        (Right interp) -> putStrLn "Finished"

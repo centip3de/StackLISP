@@ -15,7 +15,7 @@ module StackLISP.Tokens where
         | Mod a
         deriving (Functor)
 
-    data IOF a = Print a
+    data IOF a = Print String a
         | Input (String -> a) 
         deriving (Functor)
 

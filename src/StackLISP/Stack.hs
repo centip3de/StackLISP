@@ -4,23 +4,23 @@ module StackLISP.Stack where
     import StackLISP.Tokens
     import StackLISP.Errors
 
-    data StackData = IntData Int 
+    data StackData a = IntData Int 
         | StringData String 
         | BooleanData Bool 
-        | StatementData [Statement]
-        | RecursiveData StackData deriving (Show)
+        | StatementData [(StatementF a)]
+        | RecursiveData (StackData a) 
 
     data Stack = Empty 
-        | Some [StackData] deriving (Show)
+        | Some [StackData ()]
 
-    push :: Stack -> StackData -> Stack
+    push :: Stack -> StackData () -> Stack
     push (Empty) newEle = Some [newEle]
     push (Some stack) newEle = Some (newEle:stack)
 
-    pop :: Stack -> Either RuntimeError (StackData, Stack)
+    pop :: Stack -> Either RuntimeError (StackData (), Stack)
     pop (Empty) = Left (RuntimeError "Cannot pop an empty stack")
     pop (Some (x:xs)) = Right (x, Some (xs))
 
-    peek :: Stack -> Maybe StackData
+    peek :: Stack -> Maybe (StackData ())
     peek (Empty) = Nothing
     peek (Some (x:xs)) = Just x

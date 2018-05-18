@@ -40,42 +40,43 @@ module StackLISP.Parser where
 
     import StackLISP.Tokens
     import Control.Monad
+    import Control.Monad.Free
     import Text.ParserCombinators.Parsec hiding (spaces)
 
     parseBoolean :: Parser Primitive
     parseBoolean = do
         x <- handleWhitespace $ oneOf "TF"
         return $ case x of
-            'T' -> (BooleanToken True)
-            'F' -> (BooleanToken False)
+            'T' -> (Boolean True)
+            'F' -> (Boolean False)
 
     parseMath :: Parser (MathF ())
     parseMath = do
         x <- handleWhitespace $ oneOf "+-*/%"
         return $ case x of
-            '+' -> Add
-            '-' -> Sub
-            '*' -> Mul
-            '/' -> Div
-            '%' -> Mod
+            '+' -> Add ()
+            '-' -> Sub ()
+            '*' -> Mul ()
+            '/' -> Div ()
+            '%' -> Mod ()
 
     parseIO :: Parser (IOF ())
     parseIO = do
         x <- handleWhitespace $ oneOf ".,"
         return $ case x of 
-            '.' -> Print
-            ',' -> Input ()
+            '.' -> Print "" ()
+            ',' -> Input (\x -> ())
 
     parseStack :: Parser (StackF ())
     parseStack = do
         x <- handleWhitespace $ oneOf "pdrste"
         return $ case x of
-            'p' -> Pop
-            'd' -> Dup
-            'r' -> Reverse
-            's' -> Swap
-            't' -> Sort
-            'e' -> Execute
+            'p' -> Pop ()
+            'd' -> Dup ()
+            'r' -> Reverse ()
+            's' -> Swap ()
+            't' -> Sort ()
+            'e' -> Execute ()
 
     parseWhitespace :: Parser ()
     parseWhitespace = skipMany space
@@ -97,16 +98,34 @@ module StackLISP.Parser where
     parseLoop = do
         x <- handleWhitespace $ oneOf "fw"
         return $ case x of 
-            'f' -> For
-            'w' -> While
+            'f' -> For ()
+            'w' -> While ()
+
+{-
+    (<*>) :: Applicative f => f (a -> b) -> f a -> f b
+    ($)   ::                    (a -> b) ->   a ->   b
+
+    (<$>) :: Functor f => (a -> b) -> f a -> f b
+
+    f <$> x <*> y <*> ... <*> z
+
+    f :: a -> b -> c -> d
+    x :: a
+    y :: b
+    z :: c
+
+    f <$> x :: f (b -> c -> d)
+    (f <$> x) <$> y :: f (c -> d)
+    ((f <$> x) <*> y) <*> z :: f d
+-}
 
     parseStatement :: Parser (StatementF ())
-    parseStatement = (MathSt <$> parseMath) 
-        <|> (PrimSt <$> parsePrimitive)
-        <|> (IOSt <$> parseIO)
-        <|> (StackSt <$> parseStack)
-        <|> (LoopSt <$> parseLoop)
-        <|> (BlockSt <$> parseBlock)
+    parseStatement = (MathSt <$> parseMath <*> pure ()) 
+        <|> (PrimSt <$> parsePrimitive <*> pure ())
+        <|> (IOSt <$> parseIO <*> pure ())
+        <|> (StackSt <$> parseStack <*> pure ())
+        <|> (LoopSt <$> parseLoop <*> pure ())
+        <|> (BlockSt <$> parseBlock <*> pure ())
     
     handleWhitespace :: Parser a -> Parser a
     handleWhitespace p = p <* parseWhitespace
