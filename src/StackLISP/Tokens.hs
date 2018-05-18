@@ -3,50 +3,52 @@ module StackLISP.Tokens where
 
     import Control.Monad.Free
 
-    data PrimitiveToken = StringToken String
-        | BooleanToken Bool
-        | NumberToken Int 
-        deriving (Show, Eq)
+    data Primitive = Str String
+        | Boolean Bool
+        | Number Int
+        deriving (Eq, Show)
 
-    data MathOps = Add 
-        | Sub 
-        | Mul 
-        | Div 
-        | Mod 
-        deriving (Show, Eq)
-
-    data IOOps = Print
-        | Input
-        deriving (Show, Eq)
-
-    data StringIO a = PrintStr String a
-        | InputStr (String -> a) 
+    data MathF a = Add a
+        | Sub a
+        | Mul a
+        | Div a
+        | Mod a
         deriving (Functor)
 
-    type IOM a = Free StringIO a
+    data IOF a = Print a
+        | Input (String -> a) 
+        deriving (Functor)
 
-    data StackOps = Pop 
-        | Dup 
-        | Reverse 
-        | Swap 
-        | Sort 
-        | Execute 
-        deriving (Show, Eq)
+    data StackF a = Pop a
+        | Dup a
+        | Reverse a
+        | Swap a
+        | Sort a
+        | Execute a
+        deriving (Functor)
 
-    data LoopOps = While 
-        | For 
-        deriving(Show, Eq)
+    data LoopF a = While a
+        | For a
+        deriving (Functor)
 
-    data Statement = StackSt StackOps 
-        | MathSt MathOps 
-        | PrimSt PrimitiveToken 
-        | IOSt IOOps
-        | BlockSt BlockOp
-        | LoopSt LoopOps 
-        | NOP 
-        | EOB 
-        deriving (Show, Eq)
+    data StatementF a = StackSt (StackF a) a
+        | MathSt (MathF a) a
+        | PrimSt Primitive a
+        | IOSt (IOF a) a
+        | BlockSt (BlockF a) a
+        | LoopSt (LoopF a) a
+        deriving (Functor)
 
-    data BlockOp = BlockOp [Statement] deriving (Show, Eq)
+    data BlockF a = BlockOp [(StatementF a)] 
+        deriving (Functor)
 
-    data Program = Program [Statement] deriving (Show, Eq)
+    data ProgramF a = Program [(StatementF a)] 
+        deriving (Functor)
+
+    type MathM a = Free MathF a
+    type IOM a = Free IOF a
+    type StackM a = Free StackF a
+    type LoopM a = Free LoopF a
+    type StatementM a = Free StatementF a
+    type BlockM a = Free BlockF a
+    type ProgramM a = Free ProgramF a

@@ -42,14 +42,14 @@ module StackLISP.Parser where
     import Control.Monad
     import Text.ParserCombinators.Parsec hiding (spaces)
 
-    parseBoolean :: Parser PrimitiveToken
+    parseBoolean :: Parser Primitive
     parseBoolean = do
         x <- handleWhitespace $ oneOf "TF"
         return $ case x of
             'T' -> (BooleanToken True)
             'F' -> (BooleanToken False)
 
-    parseMath :: Parser MathOps
+    parseMath :: Parser (MathF ())
     parseMath = do
         x <- handleWhitespace $ oneOf "+-*/%"
         return $ case x of
@@ -59,14 +59,14 @@ module StackLISP.Parser where
             '/' -> Div
             '%' -> Mod
 
-    parseIO :: Parser IOOps
+    parseIO :: Parser (IOF ())
     parseIO = do
         x <- handleWhitespace $ oneOf ".,"
         return $ case x of 
             '.' -> Print
-            ',' -> Input
+            ',' -> Input ()
 
-    parseStack :: Parser StackOps
+    parseStack :: Parser (StackF ())
     parseStack = do
         x <- handleWhitespace $ oneOf "pdrste"
         return $ case x of
@@ -80,27 +80,27 @@ module StackLISP.Parser where
     parseWhitespace :: Parser ()
     parseWhitespace = skipMany space
 
-    parseString :: Parser PrimitiveToken
+    parseString :: Parser Primitive
     parseString = do
         char '"'
         x <- many (noneOf "\"")
         handleWhitespace $ char '"'
-        return $ StringToken x
+        return $ Str x
 
-    parseNumber :: Parser PrimitiveToken
-    parseNumber = liftM (NumberToken . read) $ handleWhitespace $ many1 digit
+    parseNumber :: Parser Primitive
+    parseNumber = liftM (Number . read) $ handleWhitespace $ many1 digit
 
-    parsePrimitive :: Parser PrimitiveToken
+    parsePrimitive :: Parser Primitive
     parsePrimitive = parseNumber <|> parseBoolean <|> parseString
 
-    parseLoop :: Parser LoopOps
+    parseLoop :: Parser (LoopF ())
     parseLoop = do
         x <- handleWhitespace $ oneOf "fw"
         return $ case x of 
             'f' -> For
             'w' -> While
 
-    parseStatement :: Parser Statement
+    parseStatement :: Parser (StatementF ())
     parseStatement = (MathSt <$> parseMath) 
         <|> (PrimSt <$> parsePrimitive)
         <|> (IOSt <$> parseIO)
@@ -111,15 +111,15 @@ module StackLISP.Parser where
     handleWhitespace :: Parser a -> Parser a
     handleWhitespace p = p <* parseWhitespace
 
-    parseBlock :: Parser BlockOp
+    parseBlock :: Parser (BlockF ())
     parseBlock = do
         handleWhitespace $ char '['
         x <- many1 parseStatement
         char ']'
-        return $ BlockOp $ x ++ [EOB]
+        return $ BlockOp $ x 
 
-    parseProgram :: Parser Program
+    parseProgram :: Parser (ProgramF ())
     parseProgram = Program <$> (many1 parseStatement <* eof)
 
-    parseFile :: String -> Either ParseError Program
+    parseFile :: String -> Either ParseError (ProgramF ())
     parseFile contents = parse parseProgram "StackLISP" contents

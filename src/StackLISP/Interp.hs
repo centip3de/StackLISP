@@ -157,7 +157,7 @@ module StackLISP.Interp where
     putString :: IOM String
     putString string = liftF $ PrintStr string ()
 
-    doIO :: IOM a -> IO a 
+    doIO :: IOM a -> Either RuntimeError IO a 
     doIO = foldFree func
                 where 
                     func (InputStr f) = f <$> getChar
