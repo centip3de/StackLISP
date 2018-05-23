@@ -6,12 +6,18 @@ module StackLISP.Interp where
     import StackLISP.Tokens
     import StackLISP.Errors
 
-    data Interp = Interp {
-        stack :: Stack,
-        program :: ProgramM ()
-    }
+    step :: Stack -> StatementM a -> IO a
+    step stack (Free (Boolean bool next)) = step (push stack (BooleanData bool)) next
+    step stack (Free (Str string next)) = step (push stack (StringData string)) next 
+    step stack (Free (Print next)) = case pop stack of
+        (Left error) -> (putStrLn $ "Runtime error:" ++ show error) >> return ()
+        (Right (item, newStack)) -> (putStrLn $ show item) >> return ()
+    step stack (Free _) = return ()
 
-    interp :: String -> Either String Interp
+    eval :: StatementM a -> IO a
+    eval program = step Empty program
+
+    interp :: String -> IO ()
     interp contents = case parseFile contents of 
-        (Left error) -> Left $ "Parsing Error: " ++ (show error)
-        (Right res) -> Right $ Interp {stack=Empty, program=liftF res}
+        (Left error) -> putStrLn $ "Parsing Error: " ++ (show error)
+        (Right res) -> eval res

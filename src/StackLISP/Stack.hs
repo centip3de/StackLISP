@@ -9,9 +9,11 @@ module StackLISP.Stack where
         | BooleanData Bool 
         | StatementData [(StatementF a)]
         | RecursiveData (StackData a) 
+        deriving (Show)
 
     data Stack = Empty 
         | Some [StackData ()]
+        deriving (Show)
 
     push :: Stack -> StackData () -> Stack
     push (Empty) newEle = Some [newEle]
