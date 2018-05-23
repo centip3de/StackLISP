@@ -16,6 +16,15 @@ module StackLISP.Interp where
         modify (push (StringData string))
         newStack <- get
         eval newStack next 
+    eval stack (Free (Number int next)) = do
+        modify (push (IntData int))
+        newStack <- get
+        eval newStack next
+    eval stack (Free (Pop next)) = case pop stack of
+        (Left error) -> lift $ (putStrLn ("Runtime error: " ++ show error))
+        (Right (_, newStack)) -> do
+            put newStack
+            eval newStack next
     eval stack (Free (Print next)) = case pop stack of
         (Left error) -> lift $ (putStrLn ("Runtime error: " ++ show error))
         (Right (item, newStack)) -> do
