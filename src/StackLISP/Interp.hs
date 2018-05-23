@@ -21,17 +21,22 @@ module StackLISP.Interp where
         newStack <- get
         eval newStack next
     eval stack (Free (Pop next)) = case pop stack of
-        (Left error) -> lift $ (putStrLn ("Runtime error: " ++ show error))
+        (Left error) -> lift $ (putStrLn $ show error)
         (Right (_, newStack)) -> do
             put newStack
             eval newStack next
     eval stack (Free (Print next)) = case pop stack of
-        (Left error) -> lift $ (putStrLn ("Runtime error: " ++ show error))
+        (Left error) -> lift $ (putStrLn $ show error)
         (Right (item, newStack)) -> do
             lift $ putStrLn $ show item
             put newStack
             eval newStack next
-    eval stack (Free (Done _)) = return ()
+    eval stack (Free (Input next)) = do
+        input <- lift $ getLine
+        modify (push (StringData input))
+        newStack <- get
+        eval newStack next
+    eval stack (Free (Done _)) = lift $ (putStrLn "Finished") 
 
     interp :: String -> IO ()
     interp contents = case parseFile contents of 

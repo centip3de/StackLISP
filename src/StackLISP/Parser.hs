@@ -63,9 +63,9 @@ module StackLISP.Parser where
     parseIO :: Parser (StatementM ())
     parseIO = do
         x <- handleWhitespace $ oneOf ".,"
-        return $ liftF $ Print () {-$ case x of 
-            '.' -> Print ""
-            ',' -> Input (\x -> ()) -}
+        return $ liftF $ case x of 
+            '.' -> Print ()
+            ',' -> Input ()
 
     parseStack :: Parser (StatementM ())
     parseStack = do
@@ -114,32 +114,30 @@ module StackLISP.Parser where
         end
     -}
 
-    combine :: StatementM () -> StatementM () -> StatementM ()
-    combine a b = a >> b
 
-    parseStatement :: Parser (StatementM ())
-    parseStatement = do
-        statement <- parseStack <|> parsePrimitive <|> parseIO 
-        rest <- optionMaybe parseStatement
-        case rest of
-            Nothing -> return $ combine statement $ liftF (Done ())
-            (Just x) -> return $ combine statement x
+    parseSingleStatement :: Parser (StatementM ())
+    parseSingleStatement = parseStack 
+        <|> parsePrimitive 
+        <|> parseIO 
+        -- <|> parseBlock
+
+    parseMultipleStatements :: Parser (StatementM ())
+    parseMultipleStatements = do
+        statements <- many1 parseSingleStatement
+        return $ foldl (\acc x -> x >> acc) (liftF (Done ())) (reverse statements)
         
-    
     handleWhitespace :: Parser a -> Parser a
     handleWhitespace p = p <* parseWhitespace
 
-    {-
-    parseBlock :: Parser (Fix BlockF)
+    parseBlock :: Parser (StatementM ())
     parseBlock = do
         handleWhitespace $ char '['
-        x <- many1 parseStatement
+        statements <- many1 parseSingleStatement
         char ']'
-        return $ BlockOp $ x 
-    -}
+        return $ liftF $ Block (foldl (\acc x -> x >> acc) (liftF (Done ())) (reverse statements)) ()
 
     parseProgram :: Parser (StatementM ())
-    parseProgram = parseStatement <* eof
+    parseProgram = parseMultipleStatements <* eof
 
     parseFile :: String -> Either ParseError (StatementM ())
     parseFile contents = parse parseProgram "StackLISP" contents

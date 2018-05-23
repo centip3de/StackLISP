@@ -17,20 +17,6 @@ module StackLISP.Tokens where
         | Mod a
         deriving (Functor, Show)
 
-    {-
-    data IOF a = Print String a
-        | Input (String -> a) 
-        deriving (Functor)
-
-    data StackF a = Pop a
-        | Dup a
-        | Reverse a
-        | Swap a
-        | Sort a
-        | Execute a
-        deriving (Functor, Show)
-    -}
-
     data LoopF a = While a
         | For a
         deriving (Functor, Show)
@@ -45,20 +31,15 @@ module StackLISP.Tokens where
         | Boolean Bool a
         | Number Int a
         | Print a
+        | Input a -- This should probably be "Input (String -> a)", but we need to derive show for the moment
         | Done a
-        deriving (Functor, Show)
-        -- | Input (String -> a)
-
-    data BlockF a = BlockOp [(StatementF a)] 
+        | Block (StatementF a) a
         deriving (Functor, Show)
 
     data ProgramF a = Program (StatementF a)
         deriving (Functor, Show)
 
     type MathM a = Free MathF a
-    --type IOM a = Free IOF a
-    --type StackM a = Free StackF a
     type LoopM a = Free LoopF a
     type StatementM a = Free StatementF a
-    type BlockM a = Free BlockF a
     type ProgramM a = Free ProgramF a
