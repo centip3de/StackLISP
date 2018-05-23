@@ -45,6 +45,7 @@ module StackLISP.Tokens where
         | Boolean Bool a
         | Number Int a
         | Print a
+        | Done a
         deriving (Functor, Show)
         -- | Input (String -> a)
 

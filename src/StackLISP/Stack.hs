@@ -7,7 +7,7 @@ module StackLISP.Stack where
     data StackData a = IntData Int 
         | StringData String 
         | BooleanData Bool 
-        | StatementData [(StatementF a)]
+        | StatementData (StatementF a)
         | RecursiveData (StackData a) 
         deriving (Show)
 
@@ -15,9 +15,9 @@ module StackLISP.Stack where
         | Some [StackData ()]
         deriving (Show)
 
-    push :: Stack -> StackData () -> Stack
-    push (Empty) newEle = Some [newEle]
-    push (Some stack) newEle = Some (newEle:stack)
+    push :: StackData () -> Stack -> Stack
+    push  newEle (Empty) = Some [newEle]
+    push  newEle (Some stack) = Some (newEle:stack)
 
     pop :: Stack -> Either RuntimeError (StackData (), Stack)
     pop (Empty) = Left (RuntimeError "Cannot pop an empty stack")

@@ -122,7 +122,7 @@ module StackLISP.Parser where
         statement <- parseStack <|> parsePrimitive <|> parseIO 
         rest <- optionMaybe parseStatement
         case rest of
-            Nothing -> return statement
+            Nothing -> return $ combine statement $ liftF (Done ())
             (Just x) -> return $ combine statement x
         
     

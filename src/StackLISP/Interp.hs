@@ -1,23 +1,32 @@
 module StackLISP.Interp where
     import Control.Monad.Free
+    import Control.Monad.State
 
     import StackLISP.Stack
     import StackLISP.Parser
     import StackLISP.Tokens
     import StackLISP.Errors
 
-    step :: Stack -> StatementM a -> IO a
-    step stack (Free (Boolean bool next)) = step (push stack (BooleanData bool)) next
-    step stack (Free (Str string next)) = step (push stack (StringData string)) next 
-    step stack (Free (Print next)) = case pop stack of
-        (Left error) -> (putStrLn $ "Runtime error:" ++ show error) >> return ()
-        (Right (item, newStack)) -> (putStrLn $ show item) >> return ()
-    step stack (Free _) = return ()
-
-    eval :: StatementM a -> IO a
-    eval program = step Empty program
+    eval :: Stack -> StatementM a -> StateT Stack IO ()
+    eval stack (Free (Boolean bool next)) = do
+        modify (push (BooleanData bool))
+        newStack <- get
+        eval newStack next
+    eval stack (Free (Str string next)) = do
+        modify (push (StringData string))
+        newStack <- get
+        eval newStack next 
+    eval stack (Free (Print next)) = case pop stack of
+        (Left error) -> lift $ (putStrLn ("Runtime error: " ++ show error))
+        (Right (item, newStack)) -> do
+            lift $ putStrLn $ show item
+            put newStack
+            eval newStack next
+    eval stack (Free (Done _)) = return ()
 
     interp :: String -> IO ()
     interp contents = case parseFile contents of 
         (Left error) -> putStrLn $ "Parsing Error: " ++ (show error)
-        (Right res) -> eval res
+        (Right res) -> do
+            output <- execStateT (eval Empty res) Empty
+            putStrLn $ show output
