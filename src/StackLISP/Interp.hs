@@ -174,6 +174,25 @@ module StackLISP.Interp where
             newStack' <- get
             eval newStack' next
         (Right (_, newStack)) -> lift $ (putStrLn "Cannot execute item.")
+    eval stack (Free (For next)) = case pop stack of
+        (Left error) -> lift $ putStrLn $ show error
+        (Right ((StatementData statements), newStack)) -> do
+            let for nextStack i = do
+                    put (push (IntData i) nextStack)
+                    nextStack' <- get
+                    eval nextStack' statements
+                    newStack' <- get
+                    unless (i == 0) (for newStack' (i-1))
+
+            case pop newStack of
+                (Left error) -> lift $ putStrLn $ show error
+                (Right ((IntData int), otherStack)) -> do
+                    for otherStack int
+                    newStack' <- get
+                    eval newStack' next
+                (Right _) -> lift $ putStrLn "Cannot (currently) iterate over that type."
+        (Right _) -> lift $ putStrLn "Cannot execute item."
+
     eval stack (Free (Done _)) = return ()
 
     -- Fall through
