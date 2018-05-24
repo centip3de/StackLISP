@@ -96,30 +96,19 @@ module StackLISP.Parser where
     parsePrimitive :: Parser (StatementM ())
     parsePrimitive = parseNumber <|> parseBoolean <|> parseString
 
-    parseLoop :: Parser (LoopF ())
+    parseLoop :: Parser (StatementM ())
     parseLoop = do
         x <- handleWhitespace $ oneOf "fw"
-        return $ case x of 
+        return $ liftF $ case x of 
             'f' -> For ()
             'w' -> While ()
-
-    {-
-    parseStatement = do
-        -- Output = (StatementF a)
-        (StatementF next) <- parseStack <|> parsePrimitive <|> parseIO
-        if next do
-            return $ (StatementF next (StatementF parseStatement))
-        else
-            return $ (StatementF EOF ())
-        end
-    -}
-
 
     parseSingleStatement :: Parser (StatementM ())
     parseSingleStatement = parseStack 
         <|> parsePrimitive 
         <|> parseIO 
         <|> parseMath
+        <|> parseLoop
         <|> parseBlock
 
     parseMultipleStatements :: Parser (StatementM ())

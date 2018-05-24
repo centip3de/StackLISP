@@ -3,17 +3,16 @@ module StackLISP.Tokens where
 
     import Control.Monad.Free
 
-    -- To port:
-    data LoopF a = While a
-        | For a
-        deriving (Functor, Show)
-
     data StatementF a = Pop a -- Stack OPs
         | Dup a 
         | Reverse a
         | Swap a
         | Sort a
         | Execute a
+
+        -- Loop OPs
+        | While a
+        | For a
 
          -- Math OPs
         | Add a
@@ -34,14 +33,16 @@ module StackLISP.Tokens where
         | Done a
         deriving (Functor)
 
-    data ProgramF a = Program (StatementF a)
-        deriving (Functor, Show)
-
-    type LoopM a = Free LoopF a
     type StatementM a = Free StatementF a
-    type ProgramM a = Free ProgramF a
 
     instance (Show a) => Show (StatementF a) where
+        show (Add a) = "Add"
+        show (Sub a) = "Sub"
+        show (Mul a) = "Mul"
+        show (Div a) = "Div"
+        show (Mod a) = "Mod"
+        show (While a) = "While"
+        show (For a) = "For"
         show (Dup a) = "Dup"
         show (Reverse a) = "Reverse"
         show (Swap a) = "Swap"

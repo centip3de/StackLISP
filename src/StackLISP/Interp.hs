@@ -156,6 +156,9 @@ module StackLISP.Interp where
     -- Control flow
     eval stack (Free (Done _)) = return ()
 
+    -- Fall through
+    eval stack (x) = lift $ (putStrLn "Unimplemented OP")
+
     interp :: String -> IO ()
     interp contents = case parseFile contents of 
         (Left error) -> putStrLn $ "Parsing Error: " ++ (show error)
