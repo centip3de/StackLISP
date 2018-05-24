@@ -4,36 +4,39 @@ module StackLISP.Tokens where
     import Control.Monad.Free
 
     -- To port:
-    data MathF a = Add a
-        | Sub a
-        | Mul a
-        | Div a
-        | Mod a
-        deriving (Functor, Show)
-
     data LoopF a = While a
         | For a
         deriving (Functor, Show)
 
-    data StatementF a = Pop a
+    data StatementF a = Pop a -- Stack OPs
         | Dup a 
         | Reverse a
         | Swap a
         | Sort a
         | Execute a
+
+         -- Math OPs
+        | Add a
+        | Sub a
+        | Mul a
+        | Div a
+        | Mod a
+
+        -- Primitives
         | Str String a
         | Boolean Bool a
         | Number Int a
+        | Block (StatementM ()) a
+
+         -- IO
         | Print a
         | Input a -- This should probably be "Input (String -> a)", but we need to derive show for the moment
         | Done a
-        | Block (StatementM ()) a
         deriving (Functor)
 
     data ProgramF a = Program (StatementF a)
         deriving (Functor, Show)
 
-    type MathM a = Free MathF a
     type LoopM a = Free LoopF a
     type StatementM a = Free StatementF a
     type ProgramM a = Free ProgramF a

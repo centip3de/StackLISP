@@ -50,10 +50,10 @@ module StackLISP.Parser where
             'T' -> (Boolean True ())
             'F' -> (Boolean False ())
 
-    parseMath :: Parser (MathF ())
+    parseMath :: Parser (StatementM ())
     parseMath = do
         x <- handleWhitespace $ oneOf "+-*/%"
-        return $ case x of
+        return $ liftF $ case x of
             '+' -> Add ()
             '-' -> Sub ()
             '*' -> Mul ()
@@ -119,6 +119,7 @@ module StackLISP.Parser where
     parseSingleStatement = parseStack 
         <|> parsePrimitive 
         <|> parseIO 
+        <|> parseMath
         <|> parseBlock
 
     parseMultipleStatements :: Parser (StatementM ())

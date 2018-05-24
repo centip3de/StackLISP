@@ -7,6 +7,16 @@ module StackLISP.Interp where
     import StackLISP.Tokens
     import StackLISP.Errors
 
+    add :: Stack -> Either RuntimeError StackData
+    add stack = do
+        (x, stack') <- pop stack
+        (y, stack'') <- pop stack'
+        case (x, y) of
+            (StringData left, StringData right) -> Right (StringData $ left ++ right)
+            (IntData left, IntData right) -> Right (IntData $ left + right)
+            (StatementData left, StatementData right) -> Right (StatementData $ left >> right)
+            _ -> Left (RuntimeError "Mismatched types: can only perform addition on matching types.")
+
     eval ::  Stack -> StatementM () -> StateT Stack IO ()
     -- Primitives
     eval stack (Free (Boolean bool next)) = do
@@ -25,6 +35,14 @@ module StackLISP.Interp where
         put (push (StatementData statements) stack)
         newStack <- get
         eval newStack next
+
+    -- Math commands
+    eval stack (Free (Add next)) = case add stack of
+        (Left error) -> lift $ (putStrLn $ show error)
+        (Right res) -> do
+            put (push res stack)
+            newStack <- get
+            eval newStack next
 
     -- Stack commands
     eval stack (Free (Pop next)) = case pop stack of
