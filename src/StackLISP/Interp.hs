@@ -7,6 +7,12 @@ module StackLISP.Interp where
     import StackLISP.Tokens
     import StackLISP.Errors
 
+    repeatStatement :: StatementM () -> Int -> StatementM ()
+    repeatStatement statement num = do
+        statement
+        statement
+        when (num /= 0) (repeatStatement statement (num-1))
+
     add :: Stack -> Either RuntimeError StackData
     add stack = do
         (x, stack') <- pop stack
@@ -16,6 +22,42 @@ module StackLISP.Interp where
             (IntData left, IntData right) -> Right (IntData $ left + right)
             (StatementData left, StatementData right) -> Right (StatementData $ left >> right)
             _ -> Left (RuntimeError "Mismatched types: can only perform addition on matching types.")
+
+    sub :: Stack -> Either RuntimeError StackData
+    sub stack = do
+        (x, stack') <- pop stack
+        (y, stack'') <- pop stack'
+        case (x, y) of
+            (StringData left, IntData right) -> Right (StringData $ drop right left)
+            (IntData left, IntData right) -> Right (IntData $ left - right)
+            --(StatementData left, IntData right) -> Right (StatementData $ drop right left)
+            _ -> Left (RuntimeError "Mismatched types: Invalid types for subtraction.")
+
+    mul :: Stack -> Either RuntimeError StackData
+    mul stack = do
+        (x, stack') <- pop stack
+        (y, stack'') <- pop stack'
+        case (x, y) of
+            (StringData left, IntData right) -> Right (StringData $ concat $ replicate right left)
+            (IntData left, IntData right) -> Right (IntData $ left * right)
+            (StatementData left, IntData right) -> Right (StatementData $ repeatStatement left right)
+            _ -> Left (RuntimeError "Mismatched types: Invalid types for multiplication.")
+
+    division :: Stack -> Either RuntimeError StackData
+    division stack = do
+        (x, stack') <- pop stack
+        (y, stack'') <- pop stack'
+        case (x, y) of
+            (IntData left, IntData right) -> Right (IntData $ left `quot` right)
+            _ -> Left (RuntimeError "Mismatched types: Invalid types for division.")
+
+    modulo :: Stack -> Either RuntimeError StackData
+    modulo stack = do
+        (x, stack') <- pop stack
+        (y, stack'') <- pop stack'
+        case (x, y) of
+            (IntData left, IntData right) -> Right (IntData $ left `mod` right)
+            _ -> Left (RuntimeError "Mismatched types: Invalid types for modulo.")
 
     eval ::  Stack -> StatementM () -> StateT Stack IO ()
     -- Primitives
@@ -38,6 +80,24 @@ module StackLISP.Interp where
 
     -- Math commands
     eval stack (Free (Add next)) = case add stack of
+        (Left error) -> lift $ (putStrLn $ show error)
+        (Right res) -> do
+            put (push res stack)
+            newStack <- get
+            eval newStack next
+    eval stack (Free (Sub next)) = case sub stack of
+        (Left error) -> lift $ (putStrLn $ show error)
+        (Right res) -> do
+            put (push res stack)
+            newStack <- get
+            eval newStack next
+    eval stack (Free (Div next)) = case division stack of
+        (Left error) -> lift $ (putStrLn $ show error)
+        (Right res) -> do
+            put (push res stack)
+            newStack <- get
+            eval newStack next
+    eval stack (Free (Mod next)) = case modulo stack of
         (Left error) -> lift $ (putStrLn $ show error)
         (Right res) -> do
             put (push res stack)
