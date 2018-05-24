@@ -3,7 +3,9 @@ module StackLISP.Tokens where
 
     import Control.Monad.Free
 
-    data StatementF a = Pop a -- Stack OPs
+    data StatementF a = Done a
+        -- Stack OPs
+        | Pop a 
         | Dup a 
         | Reverse a
         | Swap a
@@ -36,7 +38,6 @@ module StackLISP.Tokens where
          -- IO
         | Print a
         | Input a -- This should probably be "Input (String -> a)", but we need to derive show for the moment
-        | Done a
         deriving (Functor)
 
     type StatementM a = Free StatementF a
