@@ -25,6 +25,14 @@ module StackLISP.Interp where
         (Right (_, newStack)) -> do
             put newStack
             eval newStack next
+    eval stack (Free (Execute next)) = case pop stack of
+        (Left error) -> lift $ (putStrLn $ show error)
+        (Right ((StatementData statements), newStack)) -> do
+            put newStack
+            eval newStack statements
+            newStack' <- get
+            eval newStack' next
+        (Right (_, newStack)) -> lift $ (putStrLn "Cannot execute item.")
     eval stack (Free (Print next)) = case pop stack of
         (Left error) -> lift $ (putStrLn $ show error)
         (Right (item, newStack)) -> do
@@ -34,6 +42,10 @@ module StackLISP.Interp where
     eval stack (Free (Input next)) = do
         input <- lift $ getLine
         modify (push (StringData input))
+        newStack <- get
+        eval newStack next
+    eval stack (Free (Block statements next)) = do
+        modify (push (StatementData statements))
         newStack <- get
         eval newStack next
     eval stack (Free (Done _)) = lift $ (putStrLn "Finished") 

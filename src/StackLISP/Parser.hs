@@ -119,7 +119,7 @@ module StackLISP.Parser where
     parseSingleStatement = parseStack 
         <|> parsePrimitive 
         <|> parseIO 
-        -- <|> parseBlock
+        <|> parseBlock
 
     parseMultipleStatements :: Parser (StatementM ())
     parseMultipleStatements = do
