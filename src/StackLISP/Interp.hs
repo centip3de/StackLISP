@@ -7,7 +7,7 @@ module StackLISP.Interp where
     import StackLISP.Tokens
     import StackLISP.Errors
 
-    eval :: Stack a -> StatementM a -> StateT (Stack a) IO ()
+    eval :: (Show a) => Stack a -> StatementM a -> StateT (Stack a) IO ()
     -- Primitives
     eval stack (Free (Boolean bool next)) = do
         put (push (BooleanData bool) stack)
@@ -45,7 +45,7 @@ module StackLISP.Interp where
     eval stack (Free (Print next)) = case pop stack of
         (Left error) -> lift $ (putStrLn $ show error)
         (Right (item, newStack)) -> do
-            lift $ putStrLn $ "Print" --show item --"Print" -- TODO: Print item. Right now getting weird show error
+            lift $ putStrLn $ show item
             put newStack
             eval newStack next
     eval stack (Free (Input next)) = do
