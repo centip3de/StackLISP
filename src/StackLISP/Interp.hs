@@ -13,6 +13,14 @@ module StackLISP.Interp where
         statement
         when (num /= 0) (repeatStatement statement (num-1))
 
+    stackIsFalsy :: Stack -> Bool
+    stackIsFalsy stack = case peek stack of
+        (Just (IntData 0)) -> True
+        (Just (BooleanData False)) -> True
+        (Just (StringData "")) -> True
+        (Just (StatementData _)) -> True
+        _ -> False
+
     add :: Stack -> Either RuntimeError StackData
     add stack = do
         (x, stack') <- pop stack
@@ -112,8 +120,8 @@ module StackLISP.Interp where
             eval newStack next
     eval stack (Free (Dup next)) = case stack of
         Empty -> eval stack next
-        (Some xs) -> do
-            put (Some $ concat $ replicate 2 xs)
+        (Some (x:xs)) -> do
+            put (Some (x:x:xs))
             newStack <- get
             eval newStack next
     eval stack (Free (Reverse next)) = case stack of
@@ -154,6 +162,18 @@ module StackLISP.Interp where
         eval newStack next
 
     -- Control flow
+    eval stack (Free (While next)) = case pop stack of
+        (Left error) -> lift $ (putStrLn $ show error)
+        (Right ((StatementData statements), newStack)) -> do
+            let while nextStack = do
+                    put nextStack
+                    eval nextStack statements
+                    newStack' <- get
+                    unless (stackIsFalsy newStack') (while newStack')
+            while newStack
+            newStack' <- get
+            eval newStack' next
+        (Right (_, newStack)) -> lift $ (putStrLn "Cannot execute item.")
     eval stack (Free (Done _)) = return ()
 
     -- Fall through
