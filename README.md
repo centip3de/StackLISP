@@ -11,3 +11,4 @@ Examples can be found in the `/examples` directory. Currently they're simply sma
 * Documentation
 * Clean up the main eval function
 * Only optionally print the stack after execution
+* Better error handling

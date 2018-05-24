@@ -67,6 +67,35 @@ module StackLISP.Interp where
             (IntData left, IntData right) -> Right (IntData $ left `mod` right)
             _ -> Left (RuntimeError "Mismatched types: Invalid types for modulo.")
 
+    equals :: Stack -> Either RuntimeError Bool
+    equals stack = do
+        (x, stack') <- pop stack
+        (y, stack'') <- pop stack'
+        case (x, y) of
+            (IntData left, IntData right) -> Right (left == right)
+            (StringData left, StringData right) -> Right (left == right)
+            _ -> Left (RuntimeError "Mismatched types: Invalid types for equality comparison.")
+
+    lessThan :: Stack -> Either RuntimeError Bool 
+    lessThan stack = do
+        (x, stack') <- pop stack
+        (y, stack'') <- pop stack'
+        case (x, y) of
+            (IntData left, IntData right) -> Right (left < right)
+            _ -> Left (RuntimeError "Mismatched types: Invalid types for lessThan comparison.")
+
+    greaterThan :: Stack -> Either RuntimeError Bool
+    greaterThan stack = do
+        lt <- lessThan stack
+        Right $ not lt
+
+    negation :: Stack -> Either RuntimeError Bool
+    negation stack = do
+        (x, stack') <- pop stack
+        case x of 
+            (BooleanData bool) -> Right $ not bool
+            _ -> Left (RuntimeError "Mismatched types: Invalid types for negation")
+
     eval ::  Stack -> StatementM () -> StateT Stack IO ()
     -- Primitives
     eval stack (Free (Boolean bool next)) = do
@@ -85,6 +114,32 @@ module StackLISP.Interp where
         put (push (StatementData statements) stack)
         newStack <- get
         eval newStack next
+
+    -- Equality commands
+    eval stack (Free (Equals next)) = case equals stack of
+        (Left error) -> lift $ putStrLn $ show error
+        (Right res) -> do
+            put (push (BooleanData res) stack)
+            newStack <- get
+            eval newStack next
+    eval stack (Free (LessThan next)) = case lessThan stack of
+        (Left error) -> lift $ putStrLn $ show error
+        (Right res) -> do
+            put (push (BooleanData res) stack)
+            newStack <- get
+            eval newStack next
+    eval stack (Free (GreaterThan next)) = case greaterThan stack of
+        (Left error) -> lift $ putStrLn $ show error
+        (Right res) -> do
+            put (push (BooleanData res) stack)
+            newStack <- get
+            eval newStack next
+    eval stack (Free (Negate next)) = case negation stack of
+        (Left error) -> lift $ putStrLn $ show error
+        (Right res) -> do
+            put (push (BooleanData res) stack)
+            newStack <- get
+            eval newStack next
 
     -- Math commands
     eval stack (Free (Add next)) = case add stack of

@@ -43,6 +43,15 @@ module StackLISP.Parser where
     import Control.Monad.Free
     import Text.ParserCombinators.Parsec hiding (spaces)
 
+    parseComparison :: Parser (StatementM ())
+    parseComparison = do
+        x <- handleWhitespace $ oneOf ("=!<>")
+        return $ liftF $ case x of
+            '=' -> (Equals ())
+            '!' -> (Negate ())
+            '<' -> (LessThan ())
+            '>' -> (GreaterThan ())
+
     parseBoolean :: Parser (StatementM ())
     parseBoolean = do
         x <- handleWhitespace $ oneOf "TF"

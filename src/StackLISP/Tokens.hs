@@ -21,6 +21,12 @@ module StackLISP.Tokens where
         | Div a
         | Mod a
 
+        -- Comparison OPs
+        | Equals a
+        | LessThan a
+        | GreaterThan a
+        | Negate a
+
         -- Primitives
         | Str String a
         | Boolean Bool a
@@ -36,6 +42,10 @@ module StackLISP.Tokens where
     type StatementM a = Free StatementF a
 
     instance (Show a) => Show (StatementF a) where
+        show (Equals a) = "Equals"
+        show (LessThan a) = "LT"
+        show (GreaterThan a) = "GT"
+        show (Negate a) = "Negate"
         show (Add a) = "Add"
         show (Sub a) = "Sub"
         show (Mul a) = "Mul"
