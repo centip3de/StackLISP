@@ -192,7 +192,6 @@ module StackLISP.Interp where
                     eval newStack' next
                 (Right _) -> lift $ putStrLn "Cannot (currently) iterate over that type."
         (Right _) -> lift $ putStrLn "Cannot execute item."
-
     eval stack (Free (Done _)) = return ()
 
     -- Fall through

@@ -7,6 +7,7 @@ Examples can be found in the `/examples` directory. Currently they're simply sma
 
 
 ### TODO:
-* Implement IO sanely (e.g. using free monads rather than passing the IO monad everywhere)
 * More OP codes
 * Documentation
+* Clean up the main eval function
+* Only optionally print the stack after execution
