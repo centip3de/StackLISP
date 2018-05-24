@@ -27,7 +27,7 @@ module StackLISP.Tokens where
         | Print a
         | Input a -- This should probably be "Input (String -> a)", but we need to derive show for the moment
         | Done a
-        | Block (StatementM a) a
+        | Block (StatementM ()) a
         deriving (Functor)
 
     data ProgramF a = Program (StatementF a)

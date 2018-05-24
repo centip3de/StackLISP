@@ -7,7 +7,7 @@ module StackLISP.Interp where
     import StackLISP.Tokens
     import StackLISP.Errors
 
-    eval :: (Show a) => Stack a -> StatementM a -> StateT (Stack a) IO ()
+    eval ::  Stack -> StatementM () -> StateT Stack IO ()
     -- Primitives
     eval stack (Free (Boolean bool next)) = do
         put (push (BooleanData bool) stack)
@@ -36,7 +36,7 @@ module StackLISP.Interp where
         (Left error) -> lift $ (putStrLn $ show error)
         (Right ((StatementData statements), newStack)) -> do
             put newStack
-            --eval newStack statements
+            eval newStack statements
             newStack' <- get
             eval newStack' next
         (Right (_, newStack)) -> lift $ (putStrLn "Cannot execute item.")
