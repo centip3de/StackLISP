@@ -21,79 +21,80 @@ module StackLISP.Interp where
         (Just (StatementData _)) -> True
         _ -> False
 
-    add :: Stack -> Either RuntimeError StackData
+    add :: Stack -> Either RuntimeError (StackData, Stack)
     add stack = do
         (x, stack') <- pop stack
         (y, stack'') <- pop stack'
         case (x, y) of
-            (StringData left, StringData right) -> Right (StringData $ left ++ right)
-            (IntData left, IntData right) -> Right (IntData $ left + right)
-            (StatementData left, StatementData right) -> Right (StatementData $ left >> right)
+            (StringData left, StringData right) -> Right (StringData $ left ++ right, stack'')
+            (IntData left, IntData right) -> Right (IntData $ left + right, stack'')
+            (StatementData left, StatementData right) -> Right (StatementData $ left >> right, stack'')
             _ -> Left (RuntimeError "Mismatched types: can only perform addition on matching types.")
 
-    sub :: Stack -> Either RuntimeError StackData
+    sub :: Stack -> Either RuntimeError (StackData, Stack)
     sub stack = do
         (x, stack') <- pop stack
         (y, stack'') <- pop stack'
         case (x, y) of
-            (StringData left, IntData right) -> Right (StringData $ drop right left)
-            (IntData left, IntData right) -> Right (IntData $ left - right)
+            (StringData left, IntData right) -> Right (StringData $ drop right left, stack'')
+            (IntData left, IntData right) -> Right (IntData $ left - right, stack'')
+            -- TODO:
             --(StatementData left, IntData right) -> Right (StatementData $ drop right left)
             _ -> Left (RuntimeError "Mismatched types: Invalid types for subtraction.")
 
-    mul :: Stack -> Either RuntimeError StackData
+    mul :: Stack -> Either RuntimeError (StackData, Stack)
     mul stack = do
         (x, stack') <- pop stack
         (y, stack'') <- pop stack'
         case (x, y) of
-            (StringData left, IntData right) -> Right (StringData $ concat $ replicate right left)
-            (IntData left, IntData right) -> Right (IntData $ left * right)
-            (StatementData left, IntData right) -> Right (StatementData $ repeatStatement left right)
+            (StringData left, IntData right) -> Right (StringData $ concat $ replicate right left, stack'')
+            (IntData left, IntData right) -> Right (IntData $ left * right, stack'')
+            (StatementData left, IntData right) -> Right (StatementData $ repeatStatement left right, stack')
             _ -> Left (RuntimeError "Mismatched types: Invalid types for multiplication.")
 
-    division :: Stack -> Either RuntimeError StackData
+    division :: Stack -> Either RuntimeError (StackData, Stack)
     division stack = do
         (x, stack') <- pop stack
         (y, stack'') <- pop stack'
         case (x, y) of
-            (IntData left, IntData right) -> Right (IntData $ left `quot` right)
+            (IntData left, IntData right) -> Right (IntData $ left `quot` right, stack'')
             _ -> Left (RuntimeError "Mismatched types: Invalid types for division.")
 
-    modulo :: Stack -> Either RuntimeError StackData
+    modulo :: Stack -> Either RuntimeError (StackData, Stack)
     modulo stack = do
         (x, stack') <- pop stack
         (y, stack'') <- pop stack'
         case (x, y) of
-            (IntData left, IntData right) -> Right (IntData $ left `mod` right)
+            (IntData left, IntData right) -> Right (IntData $ left `mod` right, stack'')
             _ -> Left (RuntimeError "Mismatched types: Invalid types for modulo.")
 
-    equals :: Stack -> Either RuntimeError Bool
+    equals :: Stack -> Either RuntimeError (Bool, Stack)
     equals stack = do
         (x, stack') <- pop stack
         (y, stack'') <- pop stack'
         case (x, y) of
-            (IntData left, IntData right) -> Right (left == right)
-            (StringData left, StringData right) -> Right (left == right)
+            (IntData left, IntData right) -> Right (left == right, stack'')
+            (StringData left, StringData right) -> Right (left == right, stack'')
             _ -> Left (RuntimeError "Mismatched types: Invalid types for equality comparison.")
 
-    lessThan :: Stack -> Either RuntimeError Bool 
+    lessThan :: Stack -> Either RuntimeError (Bool, Stack)
     lessThan stack = do
         (x, stack') <- pop stack
         (y, stack'') <- pop stack'
         case (x, y) of
-            (IntData left, IntData right) -> Right (left < right)
+            (IntData left, IntData right) -> Right (left < right, stack'')
             _ -> Left (RuntimeError "Mismatched types: Invalid types for lessThan comparison.")
 
-    greaterThan :: Stack -> Either RuntimeError Bool
+    greaterThan :: Stack -> Either RuntimeError (Bool, Stack)
     greaterThan stack = do
-        lt <- lessThan stack
-        Right $ not lt
+        (lt, stack') <- lessThan stack
+        Right $ (not lt, stack')
 
-    negation :: Stack -> Either RuntimeError Bool
+    negation :: Stack -> Either RuntimeError (Bool, Stack)
     negation stack = do
         (x, stack') <- pop stack
         case x of 
-            (BooleanData bool) -> Right $ not bool
+            (BooleanData bool) -> Right $ (not bool, stack')
             _ -> Left (RuntimeError "Mismatched types: Invalid types for negation")
 
     eval ::  Stack -> StatementM () -> StateT Stack IO ()
@@ -118,52 +119,58 @@ module StackLISP.Interp where
     -- Equality commands
     eval stack (Free (Equals next)) = case equals stack of
         (Left error) -> lift $ putStrLn $ show error
-        (Right res) -> do
-            put (push (BooleanData res) stack)
+        (Right (res, stack')) -> do
+            put (push (BooleanData res) stack')
             newStack <- get
             eval newStack next
     eval stack (Free (LessThan next)) = case lessThan stack of
         (Left error) -> lift $ putStrLn $ show error
-        (Right res) -> do
-            put (push (BooleanData res) stack)
+        (Right (res, stack')) -> do
+            put (push (BooleanData res) stack')
             newStack <- get
             eval newStack next
     eval stack (Free (GreaterThan next)) = case greaterThan stack of
         (Left error) -> lift $ putStrLn $ show error
-        (Right res) -> do
-            put (push (BooleanData res) stack)
+        (Right (res, stack')) -> do
+            put (push (BooleanData res) stack')
             newStack <- get
             eval newStack next
     eval stack (Free (Negate next)) = case negation stack of
         (Left error) -> lift $ putStrLn $ show error
-        (Right res) -> do
-            put (push (BooleanData res) stack)
+        (Right (res, stack')) -> do
+            put (push (BooleanData res) stack')
             newStack <- get
             eval newStack next
 
     -- Math commands
     eval stack (Free (Add next)) = case add stack of
         (Left error) -> lift $ (putStrLn $ show error)
-        (Right res) -> do
-            put (push res stack)
+        (Right (res, stack')) -> do
+            put (push res stack')
             newStack <- get
             eval newStack next
     eval stack (Free (Sub next)) = case sub stack of
         (Left error) -> lift $ (putStrLn $ show error)
-        (Right res) -> do
-            put (push res stack)
+        (Right (res, stack')) -> do
+            put (push res stack')
             newStack <- get
             eval newStack next
     eval stack (Free (Div next)) = case division stack of
         (Left error) -> lift $ (putStrLn $ show error)
-        (Right res) -> do
-            put (push res stack)
+        (Right (res, stack')) -> do
+            put (push res stack')
+            newStack <- get
+            eval newStack next
+    eval stack (Free (Mul next)) = case mul stack of
+        (Left error) -> lift $ (putStrLn $ show error)
+        (Right (res, stack')) -> do
+            put (push res stack')
             newStack <- get
             eval newStack next
     eval stack (Free (Mod next)) = case modulo stack of
         (Left error) -> lift $ (putStrLn $ show error)
-        (Right res) -> do
-            put (push res stack)
+        (Right (res, stack')) -> do
+            put (push res stack')
             newStack <- get
             eval newStack next
 
