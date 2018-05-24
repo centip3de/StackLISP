@@ -10,5 +10,6 @@ Examples can be found in the `/examples` directory. Currently they're simply sma
 * More OP codes
 * Documentation
 * Clean up the main eval function
-* Only optionally print the stack after execution
+* Add proper CLI arg parser
 * Better error handling
+* Figure out how to implement subtraction for blocks, now that they're implemented as free monads

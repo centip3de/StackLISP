@@ -259,9 +259,18 @@ module StackLISP.Interp where
     -- Fall through
     eval stack (x) = lift $ (putStrLn "Unimplemented OP")
 
-    interp :: String -> IO ()
-    interp contents = case parseFile contents of 
+    interp :: String -> Bool -> IO ()
+    interp contents debug = case parseFile contents of 
         (Left error) -> putStrLn $ "Parsing Error: " ++ (show error)
         (Right res) -> do
+            if debug then
+                putStrLn $ "Debug mode enabled"
+            else
+                return ()
+
             output <- execStateT (eval Empty res) Empty
-            putStrLn $ "Stack:" ++ show output
+
+            if debug then
+                putStrLn $ "Stack (after execution): " ++ show output
+            else
+                return ()
