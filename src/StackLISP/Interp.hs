@@ -32,6 +32,27 @@ module StackLISP.Interp where
         (Right (_, newStack)) -> do
             put newStack
             eval newStack next
+    eval stack (Free (Dup next)) = case stack of
+        Empty -> eval stack next
+        (Some xs) -> do
+            put (Some $ concat $ replicate 2 xs)
+            newStack <- get
+            eval newStack next
+    eval stack (Free (Reverse next)) = case stack of
+        Empty -> eval stack next
+        (Some xs) -> do
+            put (Some $ reverse xs)
+            newStack <- get
+            eval newStack next
+    eval stack (Free (Swap next)) = case stack of
+        Empty -> eval stack next
+        (Some (first:second:rest)) -> do
+            put (Some $ (second:first:rest))
+            newStack <- get
+            eval newStack next
+    eval stack (Free (Sort next)) = do
+        lift $ putStrLn "Sort isn't currently implemented. Skipping."
+        eval stack next
     eval stack (Free (Execute next)) = case pop stack of
         (Left error) -> lift $ (putStrLn $ show error)
         (Right ((StatementData statements), newStack)) -> do
@@ -55,11 +76,11 @@ module StackLISP.Interp where
         eval newStack next
 
     -- Control flow
-    eval stack (Free (Done _)) = lift $ putStrLn "Finished"
+    eval stack (Free (Done _)) = return ()
 
     interp :: String -> IO ()
     interp contents = case parseFile contents of 
         (Left error) -> putStrLn $ "Parsing Error: " ++ (show error)
         (Right res) -> do
             output <- execStateT (eval Empty res) Empty
-            putStrLn $ show output
+            putStrLn $ "Stack:" ++ show output
