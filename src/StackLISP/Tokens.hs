@@ -3,13 +3,7 @@ module StackLISP.Tokens where
 
     import Control.Monad.Free
 
-    {-
-    data Primitive = Str String
-        | Boolean Bool
-        | Number Int
-        deriving (Eq, Show)
-    -}
-
+    -- To port:
     data MathF a = Add a
         | Sub a
         | Mul a
