@@ -133,6 +133,7 @@ module StackLISP.Parser where
         <|> parseBlock
         <|> parseIf
         <|> parseLogicalOps
+        <|> parseComparison
 
     parseMultipleStatements :: Parser (StatementM ())
     parseMultipleStatements = do
