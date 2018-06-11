@@ -12,6 +12,11 @@ module StackLISP.Tokens where
         | Sort a
         | Execute a
 
+        -- Logical ops
+        | And a
+        | Or a
+        | Negate a
+
         -- Control Flow OPs
         | While a
         | For a
@@ -28,7 +33,6 @@ module StackLISP.Tokens where
         | Equals a
         | LessThan a
         | GreaterThan a
-        | Negate a
 
         -- Primitives
         | Str String a

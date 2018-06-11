@@ -93,12 +93,30 @@ module StackLISP.Interp where
         (lt, stack') <- lessThan stack
         Right $ (not lt, stack')
 
+    -- TODO: We should allow these to apply to other ops
     negation :: Stack -> Either RuntimeError (Bool, Stack)
     negation stack = do
         (x, stack') <- pop stack
         case x of 
             (BooleanData bool) -> Right $ (not bool, stack')
             _ -> Left (RuntimeError "Mismatched types: Invalid types for negation")
+
+    logicalAnd :: Stack -> Either RuntimeError (Bool, Stack)
+    logicalAnd stack = do
+        (x, stack') <- pop stack
+        (y, stack'') <- pop stack'
+        case (x, y) of
+            (BooleanData left, BooleanData right) -> Right $ (left && right, stack'')
+            _ -> Left (RuntimeError "Matmatched types: Invalid types for logical and")
+
+    logicalOr :: Stack -> Either RuntimeError (Bool, Stack)
+    logicalOr stack = do
+        (x, stack') <- pop stack
+        (y, stack'') <- pop stack'
+        case (x, y) of
+            (BooleanData left, BooleanData right) -> Right $ (left || right, stack'')
+            _ -> Left (RuntimeError "Matmatched types: Invalid types for logical or")
+
 
     eval ::  Stack -> StatementM () -> StateT Stack IO ()
     -- Primitives
@@ -139,6 +157,20 @@ module StackLISP.Interp where
             newStack <- get
             eval newStack next
     eval stack (Free (Negate next)) = case negation stack of
+        (Left error) -> lift $ putStrLn $ show error
+        (Right (res, stack')) -> do
+            put (push (BooleanData res) stack')
+            newStack <- get
+            eval newStack next
+
+    -- Logical commands
+    eval stack (Free (And next)) = case logicalAnd stack of
+        (Left error) -> lift $ putStrLn $ show error
+        (Right (res, stack')) -> do
+            put (push (BooleanData res) stack')
+            newStack <- get
+            eval newStack next
+    eval stack (Free (Or next)) = case logicalOr stack of
         (Left error) -> lift $ putStrLn $ show error
         (Right (res, stack')) -> do
             put (push (BooleanData res) stack')

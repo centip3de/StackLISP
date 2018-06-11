@@ -45,19 +45,18 @@ module StackLISP.Parser where
 
     parseComparison :: Parser (StatementM ())
     parseComparison = do
-        x <- handleWhitespace $ oneOf ("=!<>")
+        x <- handleWhitespace $ oneOf ("=<>")
         return $ liftF $ case x of
-            '=' -> (Equals ())
-            '!' -> (Negate ())
-            '<' -> (LessThan ())
-            '>' -> (GreaterThan ())
+            '=' -> Equals ()
+            '<' -> LessThan ()
+            '>' -> GreaterThan ()
 
     parseBoolean :: Parser (StatementM ())
     parseBoolean = do
         x <- handleWhitespace $ oneOf "TF"
         return $ liftF $ case x of
-            'T' -> (Boolean True ())
-            'F' -> (Boolean False ())
+            'T' -> Boolean True ()
+            'F' -> Boolean False ()
 
     parseMath :: Parser (StatementM ())
     parseMath = do
@@ -86,6 +85,14 @@ module StackLISP.Parser where
             's' -> Swap ()
             't' -> Sort ()
             'e' -> Execute ()
+
+    parseLogicalOps :: Parser (StatementM ())
+    parseLogicalOps = do
+        x <- handleWhitespace $ oneOf "AO!"
+        return $ liftF $ case x of
+            'A' -> And ()
+            'O' -> Or ()
+            '!' -> Negate ()
 
     parseWhitespace :: Parser ()
     parseWhitespace = skipMany space
@@ -125,6 +132,7 @@ module StackLISP.Parser where
         <|> parseLoop
         <|> parseBlock
         <|> parseIf
+        <|> parseLogicalOps
 
     parseMultipleStatements :: Parser (StatementM ())
     parseMultipleStatements = do
