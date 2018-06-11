@@ -6,6 +6,12 @@ StackLISP is a stack based codegolfing language where code is data, much like in
 Examples can be found in the `/examples` directory. Currently they're simply small tests of the language, however more complex ones will be added as the language progresses. 
 
 
+As a brief example, here's fizzbuzz in `StackLISP` (in 40 bytes):
+```
+15[dd3s%0=s5s%0=[p[p]["Fizz"]i]["Buzz"]i.]f
+```
+
+
 ### TODO:
 * More OP codes
 * Documentation
