@@ -29,8 +29,10 @@ module StackLISP.Stack where
 
     pop :: Stack -> Either RuntimeError (StackData, Stack)
     pop (Empty) = Left (RuntimeError "Cannot pop an empty stack")
+    pop (Some []) = Left (RuntimeError "Cannot pop an empty stack")
     pop (Some (x:xs)) = Right (x, Some (xs))
 
     peek :: Stack -> Maybe (StackData)
     peek (Empty) = Nothing
+    peek (Some []) = Nothing
     peek (Some (x:xs)) = Just x
