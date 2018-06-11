@@ -12,11 +12,12 @@ module StackLISP.Tokens where
         | Sort a
         | Execute a
 
-        -- Loop OPs
+        -- Control Flow OPs
         | While a
         | For a
+        | If a
 
-         -- Math OPs
+        -- Math OPs
         | Add a
         | Sub a
         | Mul a

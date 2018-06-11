@@ -112,6 +112,11 @@ module StackLISP.Parser where
             'f' -> For ()
             'w' -> While ()
 
+    parseIf :: Parser (StatementM ())
+    parseIf = do
+        handleWhitespace $ char 'i'
+        return $ liftF $ If ()
+
     parseSingleStatement :: Parser (StatementM ())
     parseSingleStatement = parseStack 
         <|> parsePrimitive 
@@ -119,6 +124,7 @@ module StackLISP.Parser where
         <|> parseMath
         <|> parseLoop
         <|> parseBlock
+        <|> parseIf
 
     parseMultipleStatements :: Parser (StatementM ())
     parseMultipleStatements = do

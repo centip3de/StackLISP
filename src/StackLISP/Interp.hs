@@ -21,6 +21,9 @@ module StackLISP.Interp where
         (Just (StatementData _)) -> True
         _ -> False
 
+    stackIsTruthy :: Stack -> Bool
+    stackIsTruthy stack = not $ stackIsFalsy stack
+
     add :: Stack -> Either RuntimeError (StackData, Stack)
     add stack = do
         (x, stack') <- pop stack
@@ -254,6 +257,20 @@ module StackLISP.Interp where
                     eval newStack' next
                 (Right _) -> lift $ putStrLn "Cannot (currently) iterate over that type."
         (Right _) -> lift $ putStrLn "Cannot execute item."
+    eval stack (Free (If next)) = case pop stack of
+        (Left error) -> lift $ putStrLn $ show error
+        (Right ((StatementData statements), newStack)) ->
+            if stackIsTruthy newStack then
+                do
+                    put newStack
+                    eval newStack statements
+                    newStack' <- get
+                    eval newStack' next
+            else
+                do
+                    newStack' <- get
+                    eval newStack' next
+        (Right _) -> lift $ putStrLn "Cannot execute current stack top"
     eval stack (Free (Done _)) = return ()
 
     -- Fall through
