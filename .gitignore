@@ -1,3 +1,4 @@
 .stack-work/
 StackLISP.cabal
 *~
+.DS_Store
