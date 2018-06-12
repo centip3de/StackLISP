@@ -29,9 +29,9 @@ module StackLISP.Interp where
         (x, stack') <- pop stack
         (y, stack'') <- pop stack'
         case (x, y) of
-            (StringData left, StringData right) -> Right (StringData $ left ++ right, stack'')
-            (IntData left, IntData right) -> Right (IntData $ left + right, stack'')
-            (StatementData left, StatementData right) -> Right (StatementData $ left >> right, stack'')
+            (StringData left, StringData right) -> Right (StringData $ right ++ left, stack'')
+            (IntData left, IntData right) -> Right (IntData $ right + left, stack'')
+            (StatementData left, StatementData right) -> Right (StatementData $ right >> left, stack'')
             _ -> Left (RuntimeError "Mismatched types: can only perform addition on matching types.")
 
     sub :: Stack -> Either RuntimeError (StackData, Stack)
@@ -39,8 +39,8 @@ module StackLISP.Interp where
         (x, stack') <- pop stack
         (y, stack'') <- pop stack'
         case (x, y) of
-            (StringData left, IntData right) -> Right (StringData $ drop right left, stack'')
-            (IntData left, IntData right) -> Right (IntData $ left - right, stack'')
+            (IntData left, StringData right) -> Right (StringData $ drop left right, stack'')
+            (IntData left, IntData right) -> Right (IntData $ right - left, stack'')
             -- TODO:
             --(StatementData left, IntData right) -> Right (StatementData $ drop right left)
             _ -> Left (RuntimeError "Mismatched types: Invalid types for subtraction.")
@@ -51,7 +51,7 @@ module StackLISP.Interp where
         (y, stack'') <- pop stack'
         case (x, y) of
             (StringData left, IntData right) -> Right (StringData $ concat $ replicate right left, stack'')
-            (IntData left, IntData right) -> Right (IntData $ left * right, stack'')
+            (IntData left, IntData right) -> Right (IntData $ right * left , stack'')
             (StatementData left, IntData right) -> Right (StatementData $ repeatStatement left right, stack')
             _ -> Left (RuntimeError "Mismatched types: Invalid types for multiplication.")
 
@@ -60,7 +60,7 @@ module StackLISP.Interp where
         (x, stack') <- pop stack
         (y, stack'') <- pop stack'
         case (x, y) of
-            (IntData left, IntData right) -> Right (IntData $ left `quot` right, stack'')
+            (IntData left, IntData right) -> Right (IntData $ right `quot` left, stack'')
             _ -> Left (RuntimeError "Mismatched types: Invalid types for division.")
 
     modulo :: Stack -> Either RuntimeError (StackData, Stack)
@@ -68,7 +68,7 @@ module StackLISP.Interp where
         (x, stack') <- pop stack
         (y, stack'') <- pop stack'
         case (x, y) of
-            (IntData left, IntData right) -> Right (IntData $ left `mod` right, stack'')
+            (IntData left, IntData right) -> Right (IntData $ right `mod` left, stack'')
             _ -> Left (RuntimeError "Mismatched types: Invalid types for modulo.")
 
     equals :: Stack -> Either RuntimeError (Bool, Stack)
@@ -85,7 +85,7 @@ module StackLISP.Interp where
         (x, stack') <- pop stack
         (y, stack'') <- pop stack'
         case (x, y) of
-            (IntData left, IntData right) -> Right (left < right, stack'')
+            (IntData left, IntData right) -> Right (right < left, stack'')
             _ -> Left (RuntimeError "Mismatched types: Invalid types for lessThan comparison.")
 
     greaterThan :: Stack -> Either RuntimeError (Bool, Stack)

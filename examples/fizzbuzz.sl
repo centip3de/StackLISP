@@ -1,1 +1,1 @@
-15[dd3s%0=s5s%0=[p[p]["Fizz"]i]["Buzz"]i.]f
+15[dd3%0=s5%0=[p[p]["Fizz"]i]["Buzz"]i.]f
