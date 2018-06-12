@@ -217,18 +217,21 @@ module StackLISP.Interp where
             eval newStack next
     eval stack (Free (Dup next)) = case stack of
         Empty -> eval stack next
+        (Some []) -> eval stack next
         (Some (x:xs)) -> do
             put (Some (x:x:xs))
             newStack <- get
             eval newStack next
     eval stack (Free (Reverse next)) = case stack of
         Empty -> eval stack next
+        (Some []) -> eval stack next
         (Some xs) -> do
             put (Some $ reverse xs)
             newStack <- get
             eval newStack next
     eval stack (Free (Swap next)) = case stack of
         Empty -> eval stack next
+        (Some []) -> eval stack next
         (Some (first:second:rest)) -> do
             put (Some $ (second:first:rest))
             newStack <- get
